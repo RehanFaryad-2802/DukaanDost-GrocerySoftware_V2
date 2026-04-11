@@ -82,12 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
-        <div class="text-center mt-3">
-            <small>Default logins:<br>
-            admin / 123456<br>
-            manager / 123456<br>
-            cashier1 / 123456</small>
-        </div>
     </div>
 </body>
 </html>

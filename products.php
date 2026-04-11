@@ -266,20 +266,23 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             <td>Rs. <?php echo number_format($retail, 0); ?></td>
                             <td>Rs. <?php echo number_format($wholesale, 0); ?></td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-primary"
-                                        onclick="editProduct(<?php echo $product['id']; ?>)">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-success"
-                                        onclick="managePricing(<?php echo $product['id']; ?>)">
-                                        <i class="bi bi-tag"></i>
-                                    </button>
-                                    <a href="products.php?delete=<?php echo $product['id']; ?>"
-                                        class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                </div>
+                                <td>
+    <div class="btn-group btn-group-sm">
+        <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
+        <button type="button" class="btn btn-outline-primary" onclick="editProduct(<?php echo $product['id']; ?>)">
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button type="button" class="btn btn-outline-success" onclick="managePricing(<?php echo $product['id']; ?>)">
+            <i class="bi bi-tag"></i>
+        </button>
+        <a href="products.php?delete=<?php echo $product['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
+            <i class="bi bi-trash"></i>
+        </a>
+        <?php else: ?>
+        <span class="badge bg-secondary">View Only</span>
+        <?php endif; ?>
+    </div>
+</td>
                             </td>
                         </tr>
                     <?php endforeach; ?>
