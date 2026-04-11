@@ -14,6 +14,10 @@ $stmt = $pdo->prepare("
 $stmt->execute([$invoice_id]);
 $invoice = $stmt->fetch();
 
+if (!$invoice) {
+    die("Invoice not found");
+}
+
 // Get invoice items
 $stmt = $pdo->prepare("
     SELECT * FROM invoice_items WHERE invoice_id = ?
@@ -21,63 +25,241 @@ $stmt = $pdo->prepare("
 $stmt->execute([$invoice_id]);
 $items = $stmt->fetchAll();
 
-// Generate ESC/POS commands for 72mm thermal printer
-header('Content-Type: text/plain; charset=UTF-8');
-
-// ESC/POS Commands
-$output = "";
-$output .= "\x1B\x40"; // Initialize printer
-$output .= "\x1B\x61\x01"; // Center alignment
-$output .= "\x1B\x21\x30"; // Double height text
-$output .= strtoupper($settings['store_name']) . "\n";
-$output .= "\x1B\x21\x00"; // Normal text
-$output .= $settings['store_address'] . "\n";
-$output .= "Phone: " . $settings['store_phone'] . "\n";
-if ($settings['store_gst']) {
-    $output .= "GST: " . $settings['store_gst'] . "\n";
-}
-$output .= str_repeat("=", 48) . "\n";
-$output .= "\x1B\x61\x00"; // Left alignment
-
-$output .= "Invoice: " . $invoice['invoice_no'] . "\n";
-$output .= "Date: " . date('d-m-Y h:i A', strtotime($invoice['created_at'])) . "\n";
-$output .= "Customer: " . ($invoice['customer_name'] ?: 'Walk-in') . "\n";
-$output .= "Type: " . strtoupper($invoice['customer_type']) . "\n";
-$output .= str_repeat("-", 48) . "\n";
-
-// Column headers
-$output .= sprintf("%-20s %6s %8s %10s\n", "Item", "Qty", "Rate", "Amount");
-$output .= str_repeat("-", 48) . "\n";
-
-foreach ($items as $item) {
-    $name = substr($item['product_name'], 0, 18);
-    $output .= sprintf("%-18s %6.2f %8.2f %10.2f\n", 
-        $name, 
-        $item['quantity'], 
-        $item['unit_price'], 
-        $item['total_price']
-    );
-    if ($item['tier_info']) {
-        $output .= "   (" . $item['tier_info'] . ")\n";
-    }
+// Get store settings
+$stmt = $pdo->query("SELECT * FROM settings");
+$settings = [];
+while ($row = $stmt->fetch()) {
+    $settings[$row['setting_key']] = $row['setting_value'];
 }
 
-$output .= str_repeat("-", 48) . "\n";
-$output .= sprintf("%-34s %10.2f\n", "Subtotal:", $invoice['subtotal']);
-if ($invoice['discount_amount'] > 0) {
-    $output .= sprintf("%-34s %10.2f\n", "Discount:", $invoice['discount_amount']);
-}
-$output .= "\x1B\x21\x30"; // Double height
-$output .= sprintf("%-34s %10.2f\n", "TOTAL:", $invoice['total_amount']);
-$output .= "\x1B\x21\x00"; // Normal text
-$output .= str_repeat("=", 48) . "\n";
-
-$output .= "\x1B\x61\x01"; // Center
-$output .= $settings['receipt_header'] . "\n";
-$output .= $settings['receipt_footer'] . "\n";
-$output .= "Served by: " . $invoice['created_by_name'] . "\n";
-$output .= "\n\n\n\n";
-$output .= "\x1D\x56\x41\x03"; // Cut paper
-
-echo $output;
+// Generate HTML receipt for printing
 ?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Invoice #<?php echo $invoice['invoice_no']; ?></title>
+    <style>
+        @page {
+            size: 72mm 297mm;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            width: 72mm;
+            margin: 0;
+            padding: 5px;
+            box-sizing: border-box;
+            font-weight: 900;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 11px;
+        }
+
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 8px 0;
+        }
+
+        .divider-double {
+            border-top: 2px solid #000;
+            margin: 8px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding: 3px 0;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        td {
+            padding: 3px 0;
+            vertical-align: top;
+            font-size: 11px;
+            font-weight: 900;
+            text-align: right;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .total-row {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+
+        .item-name {
+            max-width: 180px;
+            word-wrap: break-word;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+    <script>
+        // Auto print when page loads
+        window.onload = function () {
+            window.print();
+
+            // Close window after print dialog closes (or after timeout)
+            setTimeout(function () {
+                window.close();
+            }, 1000);
+        };
+
+        // If window doesn't close, provide manual close option
+        window.onafterprint = function () {
+            setTimeout(function () {
+                window.close();
+            }, 500);
+        };
+    </script>
+</head>
+
+<body onload="window.print();">
+    <div class="header">
+        <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
+        <p><?php echo $settings['store_address'] ?? ''; ?></p>
+        <p>Phone-1: 0309-9153780</p>
+        <p>Phone-2: 0303-6897661</p>
+        <p>Phone-3: 0307-6264034</p>
+        <?php if (!empty($settings['store_gst'])): ?>
+            <p>GST: <?php echo $settings['store_gst']; ?></p>
+        <?php endif; ?>
+    </div>
+
+    <div class="divider-double"></div>
+
+    <div class="info-row">
+        <span>Invoice: <?php echo $invoice['invoice_no']; ?></span>
+    </div>
+    <div class="info-row">
+        <span>Date: <?php echo date('d-m-Y h:i A'); ?></span>
+    </div>
+
+    <div class="info-row">
+    </div>
+
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-right">Amount</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Qty</th>
+                <th>Item</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <?php
+            $total_items = 0;
+            $item_number = 1;
+            foreach ($items as $item):
+                $total_items += $item['quantity'];
+
+                // Get product unit
+                $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
+                $stmt->execute([$item['product_id']]);
+                $product = $stmt->fetch();
+                $unit = $product ? $product['unit'] : 'piece';
+                ?>
+                <tr>
+                    <td class="text-right"><?php echo number_format($item['total_price'], 0); ?></td>
+                    <td class="text-right"><?php echo number_format($item['unit_price'], 0); ?></td>
+                    <td class="text-right"><?php echo number_format($item['quantity'], 0) . $unit; ?></td>
+                    <td class="item-name">
+                        <?php echo htmlspecialchars($item['product_name']); ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="info-row">
+        <span>Total Items: <?php echo count($items); ?></span>
+    </div>
+
+
+    <?php if ($invoice['discount_amount'] > 0): ?>
+        <div class="info-row">
+            <span>Discount:</span>
+            <span>Rs. <?php echo number_format($invoice['discount_amount'], 2); ?></span>
+        </div>
+    <?php endif; ?>
+
+    <div class="divider"></div>
+
+    <div class="info-row total-row">
+        <span>TOTAL:</span>
+        <span>Rs. <?php echo number_format($invoice['total_amount'], 0); ?></span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer">
+        <p><?php echo $settings['receipt_header'] ?? 'Thank you for shopping :)'; ?></p>
+        <p><?php echo date('d-m-Y h:i A', strtotime('-30 minutes')); ?></p>
+    </div>
+
+    <div class="text-center" style="margin-top: 5px;">
+        <button onclick="window.print();" style="display: none;">Print</button>
+    </div>
+</body>
+
+</html>

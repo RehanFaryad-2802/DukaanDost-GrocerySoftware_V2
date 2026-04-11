@@ -1,7 +1,45 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
+checkAuth();
+$edit_mode = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
+$editing_invoice = null;
+
+if ($edit_mode > 0) {
+    // Get invoice header
+    $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
+    $stmt->execute([$edit_mode]);
+    $invoice_header = $stmt->fetch();
+    
+    if ($invoice_header) {
+        // Get invoice items
+        $stmt = $pdo->prepare("
+            SELECT product_id, product_name, quantity, unit_price, total_price, tier_info
+            FROM invoice_items WHERE invoice_id = ?
+        ");
+        $stmt->execute([$edit_mode]);
+        $items = $stmt->fetchAll();
+        
+        $editing_invoice = [
+            'id' => $invoice_header['id'],
+            'invoice_no' => $invoice_header['invoice_no'],
+            'customer_name' => $invoice_header['customer_name'],
+            'customer_phone' => $invoice_header['customer_phone'],
+            'customer_type' => $invoice_header['customer_type'],
+            'items' => $items
+        ];
+    }
+}
 ?>
+
+<?php if ($edit_mode > 0): ?>
+<!-- DEBUG -->
+<script>
+console.log('Edit Mode: <?php echo $edit_mode; ?>');
+console.log('Invoice Header: <?php echo $invoice_header ? 'Found' : 'NOT FOUND'; ?>');
+console.log('Items Count: <?php echo count($items ?? []); ?>');
+</script>
+<?php endif; ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">New Sale Invoice</h1>
@@ -108,7 +146,7 @@ require_once 'includes/sidebar.php';
                        style="width: 80px;" value="0" min="0" onchange="updateTotal()">
                 <select id="discount_type" class="form-select form-select-sm d-inline-block" 
                         style="width: 70px;" onchange="updateTotal()">
-                    <option value="fixed">₹</option>
+                    <option value="fixed">Rs.</option>
                     <option value="percent">%</option>
                 </select>
             </td>
@@ -156,6 +194,140 @@ require_once 'includes/sidebar.php';
 <script>
     let cart = [];
     let customerType = 'retail';
+// Check if in edit mode
+
+// Check if in edit mode
+<?php if ($editing_invoice): ?>
+console.log('Edit mode activated for invoice: <?php echo $editing_invoice['invoice_no']; ?>');
+
+// Set customer type
+customerType = '<?php echo $editing_invoice['customer_type']; ?>';
+document.getElementById('customer_type').value = customerType;
+
+// Set customer details
+document.getElementById('customer_name').value = '<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>';
+document.getElementById('customer_phone').value = '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>';
+
+
+// Load and clean cart items
+const rawCart = <?php echo json_encode($editing_invoice['items']); ?>;
+cart = rawCart.map(item => ({
+    product_id: parseInt(item.product_id) || 0,
+    product_name: item.product_name,
+    quantity: parseFloat(item.quantity) || 0,
+    unit_price: parseFloat(item.unit_price) || 0,
+    total_price: parseFloat(item.total_price) || 0,
+    tier_info: item.tier_info || '',
+    unit: 'piece'
+}));
+console.log('Cleaned cart items:', cart);
+console.log('Loaded cart items:', cart.length);
+
+// Render cart and update totals
+renderCart();
+updateTotal();
+
+// Change complete button to update button
+const completeBtn = document.querySelector('button[onclick="completeSale()"]');
+if (completeBtn) {
+    completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Invoice (F12)';
+    completeBtn.className = 'btn btn-warning btn-lg w-100 mb-2';
+}
+
+// Show edit banner
+const banner = document.createElement('div');
+banner.className = 'alert alert-warning mb-3';
+banner.innerHTML = `
+    <i class="bi bi-pencil-square"></i> 
+    <strong>Editing Invoice:</strong> <?php echo $editing_invoice['invoice_no']; ?> 
+    <small class="ms-2">(Changes will create a new invoice version)</small>
+    <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+`;
+const mainContainer = document.querySelector('main .row') || document.querySelector('main');
+if (mainContainer) {
+    mainContainer.insertBefore(banner, mainContainer.firstChild);
+}
+
+// Store original invoice ID
+const EDIT_MODE = true;
+const OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
+
+// Override complete function for edit mode
+const originalComplete = completeSale;
+completeSale = async function() {
+    await updateExistingInvoice(OLD_INVOICE_ID);
+};
+// Update existing invoice
+async function updateExistingInvoice(oldInvoiceId) {
+    if (cart.length === 0) {
+        showNotification('error', 'Cart is empty!');
+        return;
+    }
+    
+    const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+    const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
+    const discountType = document.getElementById('discount_type').value;
+    
+    let discount = 0;
+    if (discountType === 'percent') {
+        discount = subtotal * (discountInput / 100);
+    } else {
+        discount = discountInput;
+    }
+    
+    const total = Math.max(0, subtotal - discount);
+    
+    const invoiceData = {
+        action: 'update_invoice',
+        old_invoice_id: oldInvoiceId,
+        customer_name: document.getElementById('customer_name').value,
+        customer_phone: document.getElementById('customer_phone').value,
+        customer_type: customerType,
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
+        payment_method: 'cash', // Default for edits
+        items: cart.map(item => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+            tier_info: item.tier_info || null
+        }))
+    };
+    
+    console.log('Updating invoice:', invoiceData);
+    
+    try {
+        const response = await fetch('api/edit_invoice.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(invoiceData)
+        });
+        
+        const result = await response.json();
+        console.log('Update result:', result);
+        
+        if (result.success) {
+            window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
+            showNotification('success', result.message || 'Invoice updated!');
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.php';
+            }, 2000);
+        } else {
+            showNotification('error', result.error || 'Failed to update invoice');
+        }
+    } catch (error) {
+        console.error('Update error:', error);
+        showNotification('error', 'Error updating invoice');
+    }
+}
+
+// Hide payment method for edit mode (keep original payment method)
+document.getElementById('payment_method').closest('.mb-3').style.display = 'none';
+<?php endif; ?>
 
     async function updateCustomerType() {
         customerType = document.getElementById('customer_type').value;
@@ -285,28 +457,33 @@ require_once 'includes/sidebar.php';
     }
 
     function renderCart() {
-        const tbody = document.getElementById('cart_items');
-
-        if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No items in cart. Search and add products above.</td></tr>';
-            return;
-        }
-
-        let html = '';
-        cart.forEach((item, index) => {
-            html += `
+    const tbody = document.getElementById('cart_items');
+    
+    if (cart.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No items in cart. Search and add products above.</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    cart.forEach((item, index) => {
+        // Convert to numbers if they're strings
+        const quantity = parseFloat(item.quantity) || 0;
+        const unitPrice = parseFloat(item.unit_price) || 0;
+        const totalPrice = parseFloat(item.total_price) || (quantity * unitPrice);
+        
+        html += `
             <tr>
                 <td>
                     <strong>${item.product_name}</strong><br>
-                    <small class="text-muted">${item.tier_info}</small>
+                    <small class="text-muted">${item.tier_info || ''}</small>
                 </td>
                 <td>
                     <input type="number" class="form-control form-control-sm" 
-                           value="${item.quantity}" step="0.001" min="0.001"
+                           value="${quantity}" step="0.001" min="0.001"
                            onchange="updateCartItemQuantity(${index}, this.value)">
                 </td>
-                <td class="text-end">₹ ${item.unit_price.toFixed(2)}</td>
-                <td class="text-end">₹ ${item.total_price.toFixed(2)}</td>
+                <td class="text-end">Rs. ${unitPrice.toFixed(2)}</td>
+                <td class="text-end">Rs. ${totalPrice.toFixed(2)}</td>
                 <td>
                     <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
                         <i class="bi bi-x"></i>
@@ -314,11 +491,22 @@ require_once 'includes/sidebar.php';
                 </td>
             </tr>
         `;
-        });
-
-        tbody.innerHTML = html;
-    }
-
+    });
+    
+    tbody.innerHTML = html;
+}
+// Clean cart data - convert string prices to numbers
+function cleanCartData(items) {
+    return items.map(item => ({
+        product_id: parseInt(item.product_id) || 0,
+        product_name: item.product_name,
+        quantity: parseFloat(item.quantity) || 0,
+        unit_price: parseFloat(item.unit_price) || 0,
+        total_price: parseFloat(item.total_price) || 0,
+        tier_info: item.tier_info || '',
+        unit: item.unit || 'piece'
+    }));
+}
     async function updateCartItemQuantity(index, newQty) {
         if (newQty <= 0) {
             removeFromCart(index);
@@ -350,8 +538,8 @@ require_once 'includes/sidebar.php';
 
         const total = Math.max(0, subtotal - discount);
 
-        document.getElementById('subtotal').textContent = `₹ ${subtotal.toFixed(2)}`;
-        document.getElementById('grand_total').textContent = `₹ ${total.toFixed(2)}`;
+        document.getElementById('subtotal').textContent = `Rs. ${subtotal.toFixed(2)}`;
+        document.getElementById('grand_total').textContent = `Rs. ${total.toFixed(2)}`;
     }
 
     async function completeSale() {
@@ -409,7 +597,13 @@ require_once 'includes/sidebar.php';
             alert('Error: ' + result.error);
         }
     }
-
+// Edit invoice - redirect to billing page with invoice data
+function editInvoice(invoiceId) {
+    if (confirm('Edit this invoice? A new version will be created.')) {
+        // Redirect directly with invoice ID
+        window.location.href = 'billing.php?edit=' + invoiceId;
+    }
+}
     function clearCart() {
         if (confirm('Clear all items from cart?')) {
             cart = [];
