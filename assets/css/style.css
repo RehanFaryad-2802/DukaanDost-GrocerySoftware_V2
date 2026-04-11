@@ -1,0 +1,141 @@
+/* Custom styles for Grocery Billing System */
+
+body {
+    font-size: .875rem;
+    background-color: #f8f9fa;
+}
+
+/* Sidebar active state */
+.sidebar .nav-link.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+/* Card enhancements */
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 500;
+}
+
+/* Table improvements */
+.table th {
+    font-weight: 600;
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #333 !important;
+}
+
+/* Product quick buttons */
+.product-btn {
+    margin: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Billing cart */
+.cart-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Print receipt styles */
+@media print {
+    .sidebar, .btn, .modal, .no-print {
+        display: none !important;
+    }
+    main {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+/* Low stock alert */
+.low-stock {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive tables */
+.table-responsive {
+    border-radius: 10px;
+}
+
+/* Dashboard cards */
+.stat-card {
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Modal improvements */
+.modal-content {
+    border-radius: 15px;
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 7px;
+    font-weight: 500;
+}
+
+.btn-lg {
+    border-radius: 10px;
+}
+
+/* Alert messages */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+/* Notification styling */
+#notificationContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+#notificationContainer .alert {
+    margin-bottom: 10px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
