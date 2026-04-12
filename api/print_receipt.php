@@ -107,9 +107,11 @@ while ($row = $stmt->fetch()) {
             padding: 3px 0;
             font-size: 11px;
             text-align: right;
+            column-gap: 10px;
         }
-
+        
         td {
+            column-gap: 10px;
             padding: 3px 0;
             vertical-align: top;
             font-size: 11px;
@@ -152,8 +154,9 @@ while ($row = $stmt->fetch()) {
 
         th:nth-child(4),
         td:nth-child(4) {
-            width: 40%;
+            width: 50%;
         }
+        
 
         @media print {
             body {
@@ -234,8 +237,8 @@ while ($row = $stmt->fetch()) {
                 $unit = $product ? $product['unit'] : 'piece';
                 ?>
                 <tr>
-                    <td class=""><?php echo number_format($item['total_price'], 0); ?></td>
-                    <td class=""><?php echo number_format($item['unit_price'], 0); ?></td>
+                    <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
+                    <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="" dir="rtl"><?php echo number_format($item['quantity'], 0) . ' ' . $unit; ?></td>
                     <td dir="rtl" class="item-name item-col">
                         #<?php echo $item_number++ . ' ' ;?> <?php echo htmlspecialchars($item['product_name']); ?>

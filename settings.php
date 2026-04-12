@@ -174,7 +174,7 @@ while ($row = $stmt->fetch()) {
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.php' ? 'active bg-primary' : ''; ?>" href="sql/install.php">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.sql' ? 'active bg-primary' : ''; ?>" href="sql/install.sql">
                             <i class="bi bi-hurricane"></i> Export Database Query
                         </a>
                     </li>
