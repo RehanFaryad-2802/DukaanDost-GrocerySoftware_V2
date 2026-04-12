@@ -158,7 +158,58 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         </button>
     </div>
 </div>
-
+<!-- Statistics Cards - Compact -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box text-primary"></i> Total Products</span>
+                    <span class="badge bg-primary fs-6">
+                        <?php
+                        $stmt = $pdo->query("SELECT COUNT(*) FROM products WHERE status = 'active'");
+                        echo $stmt->fetchColumn();
+                        ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-tags text-success"></i> Total Categories</span>
+                    <span class="badge bg-success fs-6">
+                        <?php
+                        $stmt = $pdo->query("SELECT COUNT(*) FROM categories");
+                        echo $stmt->fetchColumn();
+                        ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-rulers text-info"></i> Total Units</span>
+                    <span class="badge bg-info fs-6">
+                        <?php
+                        try {
+                            $stmt = $pdo->query("SELECT COUNT(*) FROM units");
+                            echo $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            echo "7";
+                        }
+                        ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <?php if (isset($success)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <i class="bi bi-check-circle"></i> <?php echo $success; ?>
@@ -190,7 +241,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             </div>
             <div class="col-md-4">
                 <label>Search Product</label>
-                <input type="text" name="search" class="form-control" placeholder="Name or Code"
+                <input dir="rtl" type="text" name="search" class="form-control" placeholder="نام یا کوڈ۔۔۔"
                     value="<?php echo htmlspecialchars($search); ?>">
             </div>
             <div class="col-md-2">
@@ -380,7 +431,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             </div>
                             <div class="mb-3">
                                 <label>Product Name *</label>
-                                <input type="text" name="name" class="form-control" required>
+                                <input dir="rtl" type="text" name="name" class="form-control" required>
                             </div>
                             <div class="mb-3">
                                 <label>Category</label>
@@ -402,7 +453,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label>Initial Stock</label>
-                                    <input type="number" name="current_stock" class="form-control" step="0.001" value="0">
+                                    <input value="999999" type="number" name="current_stock" class="form-control" step="0.001" value="0">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label>Min Stock Alert</label>
@@ -411,7 +462,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             </div>
                             <div class="mb-3">
                                 <label>Purchase Price (Cost) *</label>
-                                <input type="number" name="purchase_price" class="form-control" step="0.01" required>
+                                <input value="0" type="number" name="purchase_price" class="form-control" step="0.01" required>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -503,7 +554,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             
                             <div class="mb-3">
                                 <label>Product Name *</label>
-                                <input type="text" name="name" class="form-control" value="${product.name}" required>
+                                <input  dir="rtl" type="text" name="name" class="form-control" value="${product.name}" required>
                             </div>
                             
                             <div class="mb-3">

@@ -88,8 +88,8 @@ $categories = $stmt->fetchAll();
                 <form method="POST">
                     <div class="mb-3">
                         <label>Category Name *</label>
-                        <input type="text" name="category_name" class="form-control" required 
-                               placeholder="e.g., Groceries, Beverages">
+                        <input dir="rtl" type="text" name="category_name" class="form-control" required 
+                               placeholder="نام۔۔۔">
                     </div>
                     <div class="mb-3">
                         <label>Description (Optional)</label>

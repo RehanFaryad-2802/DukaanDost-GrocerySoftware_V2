@@ -26,7 +26,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="units.php">
-                            <i class="bi bi-tags"></i> Units
+                            <i class="bi bi-rulers"></i> Units
                         </a>
                     </li>
                     <li class="nav-item">

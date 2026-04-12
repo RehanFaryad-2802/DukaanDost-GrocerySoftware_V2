@@ -75,8 +75,8 @@ console.log('Items Count: <?php echo count($items ?? []); ?>');
         <div class="card mb-3">
             <div class="card-body">
                 <div class="input-group mb-3">
-                    <input type="text" id="search_product" class="form-control form-control-lg"
-                        placeholder="Scan/Search product by name or code..." onkeyup="searchProduct(this.value)"
+                    <input dir="rtl" type="text" id="search_product" class="form-control form-control-lg"
+                        placeholder="تلاش کریں۔۔۔" onkeyup="searchProduct(this.value)"
                         autofocus>
                     <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                         <i class="bi bi-x"></i>

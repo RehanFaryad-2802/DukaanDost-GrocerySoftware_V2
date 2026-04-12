@@ -277,7 +277,7 @@ if (isset($_GET['view']) && $_GET['view'] == 'categories') {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label>Category Name</label>
-                        <input type="text" name="category_name" class="form-control" required autofocus>
+                        <input dir="rtl" type="text" name="category_name" class="form-control" required autofocus>
                     </div>
                     <p class="text-muted small">
                         <i class="bi bi-info-circle"></i> 

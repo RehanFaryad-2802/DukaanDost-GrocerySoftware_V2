@@ -226,8 +226,8 @@ while ($row = $stmt->fetch()) {
                     <td class="text-right"><?php echo number_format($item['total_price'], 0); ?></td>
                     <td class="text-right"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="text-right"><?php echo number_format($item['quantity'], 0) . $unit; ?></td>
-                    <td class="item-name item-col">
-                        <?php echo htmlspecialchars($item['product_name']); ?>
+                    <td dir="rtl" class="item-name item-col">
+                       #<?php echo $item_number++; ?> <?php echo htmlspecialchars($item['product_name']); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
