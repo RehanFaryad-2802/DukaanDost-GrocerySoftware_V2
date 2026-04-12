@@ -162,6 +162,26 @@ while ($row = $stmt->fetch()) {
                 <p><strong>Receipt Header/Footer:</strong> Custom messages on receipts</p>
             </div>
         </div>
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Options</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'export_products.php' ? 'active bg-primary' : ''; ?>" href="export_products.php">
+                            <i class="bi bi-box-arrow-up"></i> Export Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.php' ? 'active bg-primary' : ''; ?>" href="sql/install.php">
+                            <i class="bi bi-hurricane"></i> Export Database Query
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 

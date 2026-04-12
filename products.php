@@ -307,7 +307,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             <td><input type="checkbox" name="selected_products[]" value="<?php echo $product['id']; ?>"
                                     class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
                             <td><small><?php echo htmlspecialchars($product['code']); ?></small></td>
-                            <td><strong><?php echo htmlspecialchars($product['name']); ?></strong></td>
+                            <td dir="rtl"><strong><?php echo htmlspecialchars($product['name']); ?></strong></td>
                             <td><?php echo htmlspecialchars($product['category'] ?: '-'); ?></td>
                             <td><?php echo htmlspecialchars($product['unit'] ?: 'Piece'); ?></td>
                             <td><span

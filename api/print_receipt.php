@@ -41,6 +41,10 @@ while ($row = $stmt->fetch()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Print Invoice #<?php echo $invoice['invoice_no']; ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400..700&display=swap"
+        rel="stylesheet">
     <style>
         @page {
             size: 72mm 297mm;
@@ -56,6 +60,7 @@ while ($row = $stmt->fetch()) {
             box-sizing: border-box;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
             font-weight: 900;
+            line-height: 1.4;
         }
 
         .header {
@@ -123,6 +128,9 @@ while ($row = $stmt->fetch()) {
         .bold {
             font-weight: bold;
         }
+        .text-center{
+            text-align: center;
+        }
 
         .total-row {
             font-size: 14px;
@@ -136,7 +144,9 @@ while ($row = $stmt->fetch()) {
         }
 
         .item-name {
-            max-width: 180px;
+            font-family: "Noto Nastaliq Urdu", serif;
+            font-optical-sizing: auto;
+            font-weight: 900;
             word-wrap: break-word;
         }
 
@@ -176,6 +186,7 @@ while ($row = $stmt->fetch()) {
     <div class="header">
         <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
         <p><?php echo $settings['store_address'] ?? ''; ?></p>
+        <p>Jandiala Sher Khan</p>
         <p>Phone-1: 0309-9153780</p>
         <p>Phone-2: 0303-6897661</p>
         <p>Phone-3: 0307-6264034</p>
@@ -223,11 +234,11 @@ while ($row = $stmt->fetch()) {
                 $unit = $product ? $product['unit'] : 'piece';
                 ?>
                 <tr>
-                    <td class="text-right"><?php echo number_format($item['total_price'], 0); ?></td>
-                    <td class="text-right"><?php echo number_format($item['unit_price'], 0); ?></td>
-                    <td class="text-right"><?php echo number_format($item['quantity'], 0) . $unit; ?></td>
+                    <td class=""><?php echo number_format($item['total_price'], 0); ?></td>
+                    <td class=""><?php echo number_format($item['unit_price'], 0); ?></td>
+                    <td class="" dir="rtl"><?php echo number_format($item['quantity'], 0) . ' ' . $unit; ?></td>
                     <td dir="rtl" class="item-name item-col">
-                       #<?php echo $item_number++; ?> <?php echo htmlspecialchars($item['product_name']); ?>
+                        #<?php echo $item_number++ . ' ' ;?> <?php echo htmlspecialchars($item['product_name']); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

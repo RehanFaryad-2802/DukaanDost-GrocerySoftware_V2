@@ -194,7 +194,6 @@ foreach ($items as $item) {
         <div class="store-address">VTI Bazar, Faryad Karyana Store</div>
         <div class="store-address">Jandiala Sher Khan</div>
         <div class="store-phone">Phone-1: 0309-9153780</div>
-        <div class="store-phone">Phone-2: </div>
     </div>
     
     <!-- Divider -->

@@ -149,7 +149,7 @@ $categories = $stmt->fetchAll();
                             </td>
                             <td>
                                 <?php if ($cat['product_count'] > 0): ?>
-                                    <a href="products.php?category=<?php echo urlencode($cat['name']); ?>" class="badge bg-primary text-decoration-none">
+                                    <a href="products.php?category=<?php echo urlencode($cat['name']); ?>" class="badge bg-success text-decoration-none">
                                         <?php echo $cat['product_count']; ?> products
                                     </a>
                                 <?php else: ?>
