@@ -2,6 +2,12 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
+// Only admin and manager can access
+if ($_SESSION['user_role'] != 'admin' && $_SESSION['user_role'] != 'manager') {
+    header('Location: dashboard.php');
+    exit;
+}
+
 // Handle add category
 if (isset($_POST['add_category'])) {
     $name = trim($_POST['category_name']);
@@ -22,17 +28,53 @@ if (isset($_POST['add_category'])) {
     }
 }
 
+// Handle edit category
+if (isset($_POST['edit_category'])) {
+    $id = intval($_POST['category_id']);
+    $name = trim($_POST['edit_name']);
+    $description = trim($_POST['edit_description'] ?? '');
+    
+    if (!empty($name)) {
+        try {
+            // Get old category name
+            $stmt = $pdo->prepare("SELECT name FROM categories WHERE id = ?");
+            $stmt->execute([$id]);
+            $oldName = $stmt->fetchColumn();
+            
+            // Update category in categories table
+            $stmt = $pdo->prepare("UPDATE categories SET name = ?, description = ? WHERE id = ?");
+            $stmt->execute([$name, $description, $id]);
+            
+            // Update all products using this category
+            $stmt = $pdo->prepare("UPDATE products SET category = ? WHERE category = ?");
+            $stmt->execute([$name, $oldName]);
+            
+            $success = "Category updated successfully!";
+        } catch (PDOException $e) {
+            if ($e->errorInfo[1] == 1062) {
+                $error = "Category '$name' already exists!";
+            } else {
+                $error = "Error: " . $e->getMessage();
+            }
+        }
+    }
+}
+
 // Handle delete category
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     
     // Check if category is in use
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category = (SELECT name FROM categories WHERE id = ?)");
+    $stmt = $pdo->prepare("SELECT name FROM categories WHERE id = ?");
     $stmt->execute([$id]);
+    $catName = $stmt->fetchColumn();
+    
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category = ?");
+    $stmt->execute([$catName]);
     $inUse = $stmt->fetchColumn();
     
     if ($inUse > 0) {
-        $error = "Cannot delete category - it is used by $inUse product(s)!";
+        $error = "Cannot delete - category is used by $inUse product(s)!";
     } else {
         $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
         $stmt->execute([$id]);
@@ -40,7 +82,7 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Get all categories
+// Get all categories with product count
 $stmt = $pdo->query("
     SELECT 
         c.*,
@@ -54,9 +96,7 @@ $categories = $stmt->fetchAll();
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">
-        <i class="bi bi-folder"></i> Category Management
-    </h1>
+    <h1 class="h2"><i class="bi bi-folder"></i> Category Management</h1>
     <a href="products.php" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> Back to Products
     </a>
@@ -80,21 +120,17 @@ $categories = $stmt->fetchAll();
     <div class="col-md-4">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-plus-circle"></i> Add New Category
-                </h5>
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Category</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
                         <label>Category Name *</label>
-                        <input dir="rtl" type="text" name="category_name" class="form-control" required 
-                               placeholder="نام۔۔۔">
+                        <input type="text" name="category_name" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label>Description (Optional)</label>
-                        <textarea name="description" class="form-control" rows="2" 
-                                  placeholder="Brief description of this category"></textarea>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
                     </div>
                     <button type="submit" name="add_category" class="btn btn-primary w-100">
                         <i class="bi bi-save"></i> Save Category
@@ -102,35 +138,17 @@ $categories = $stmt->fetchAll();
                 </form>
             </div>
         </div>
-        
-        <div class="card mt-3">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-info-circle"></i> Information
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="mb-2"><strong>Total Categories:</strong> <?php echo count($categories); ?></p>
-                <p class="mb-0 small text-muted">
-                    Categories help organize your products. You can assign a category when adding or editing a product.
-                </p>
-            </div>
-        </div>
     </div>
     
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-list"></i> All Categories
-                </h5>
+                <h5 class="mb-0"><i class="bi bi-list"></i> All Categories</h5>
             </div>
             <div class="card-body p-0">
-                <?php if (count($categories) > 0): ?>
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Name</th>
                             <th>Description</th>
                             <th>Products</th>
@@ -140,37 +158,26 @@ $categories = $stmt->fetchAll();
                     <tbody>
                         <?php foreach ($categories as $cat): ?>
                         <tr>
-                            <td>#<?php echo $cat['id']; ?></td>
-                            <td>
-                                <strong><?php echo htmlspecialchars($cat['name']); ?></strong>
-                            </td>
-                            <td>
-                                <small class="text-muted"><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small>
-                            </td>
+                            <td><strong><?php echo htmlspecialchars($cat['name']); ?></strong></td>
+                            <td><small><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small></td>
                             <td>
                                 <?php if ($cat['product_count'] > 0): ?>
-                                    <a href="products.php?category=<?php echo urlencode($cat['name']); ?>" class="badge bg-success text-decoration-none">
-                                        <?php echo $cat['product_count']; ?> products
-                                    </a>
+                                    <span class="badge bg-primary"><?php echo $cat['product_count']; ?> products</span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary">0 products</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="products.php?category=<?php echo urlencode($cat['name']); ?>" 
-                                       class="btn btn-outline-primary" title="View Products">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <button class="btn btn-outline-warning" onclick="editCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($cat['description'] ?? '', ENT_QUOTES); ?>')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
                                     <?php if ($cat['product_count'] == 0): ?>
-                                    <a href="categories.php?delete=<?php echo $cat['id']; ?>" 
-                                       class="btn btn-outline-danger" 
-                                       onclick="return confirm('Delete category \'<?php echo htmlspecialchars($cat['name']); ?>\'?')"
-                                       title="Delete">
+                                    <a href="categories.php?delete=<?php echo $cat['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this category?')">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                     <?php else: ?>
-                                    <button class="btn btn-outline-secondary" disabled title="Cannot delete - category in use">
+                                    <button class="btn btn-outline-secondary" disabled title="Cannot delete - in use">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     <?php endif; ?>
@@ -178,18 +185,52 @@ $categories = $stmt->fetchAll();
                             </td>
                         </tr>
                         <?php endforeach; ?>
+                        <?php if (count($categories) == 0): ?>
+                        <tr><td colspan="4" class="text-center py-4 text-muted">No categories found.</td></tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
-                <?php else: ?>
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-folder-x" style="font-size: 3rem;"></i>
-                    <h5 class="mt-3">No Categories Found</h5>
-                    <p>Add your first category using the form.</p>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <input type="hidden" name="category_id" id="edit_category_id">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Edit Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Category Name *</label>
+                        <input type="text" name="edit_name" id="edit_category_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Description</label>
+                        <textarea name="edit_description" id="edit_category_desc" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="edit_category" class="btn btn-warning">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editCategory(id, name, description) {
+    document.getElementById('edit_category_id').value = id;
+    document.getElementById('edit_category_name').value = name;
+    document.getElementById('edit_category_desc').value = description;
+    new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
