@@ -293,11 +293,22 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                 </thead>
                 <tbody>
                     <?php foreach ($products as $product):
-                        $stmt = $pdo->prepare("SELECT price_per_unit FROM pricing_tiers WHERE product_id = ? AND customer_type = 'retail' AND min_quantity = 1 LIMIT 1");
+                        // Get retail price - find the lowest min_quantity retail tier
+                        $stmt = $pdo->prepare("
+                            SELECT price_per_unit FROM pricing_tiers 
+                            WHERE product_id = ? AND customer_type = 'retail' 
+                            ORDER BY min_quantity ASC 
+                            LIMIT 1
+                        ");
                         $stmt->execute([$product['id']]);
                         $retail = $stmt->fetchColumn() ?: 0;
 
-                        $stmt = $pdo->prepare("SELECT price_per_unit FROM pricing_tiers WHERE product_id = ? AND customer_type = 'wholesale' ORDER BY min_quantity LIMIT 1");
+                        $stmt = $pdo->prepare("
+                            SELECT price_per_unit FROM pricing_tiers 
+                            WHERE product_id = ? AND customer_type = 'wholesale' 
+                            ORDER BY min_quantity ASC 
+                            LIMIT 1
+                        ");
                         $stmt->execute([$product['id']]);
                         $wholesale = $stmt->fetchColumn() ?: 0;
 
@@ -509,52 +520,52 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         }
     }
 
-// Global variables for pricing edit
-let currentProductId = 0;
+    // Global variables for pricing edit
+    let currentProductId = 0;
 
-// Update managePricing to store current product ID
-function managePricing(productId) {
-    currentProductId = productId;
-    fetch(`api/get_pricing.php?product_id=${productId}`)
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('pricingModalBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('pricingModal')).show();
-        });
-}
-
-// Edit tier - open modal with data
-function editTier(tierId) {
-    const row = document.getElementById('tier-row-' + tierId);
-    if (!row) {
-        console.error('Row not found for tier:', tierId);
-        return;
+    // Update managePricing to store current product ID
+    function managePricing(productId) {
+        currentProductId = productId;
+        fetch(`api/get_pricing.php?product_id=${productId}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('pricingModalBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('pricingModal')).show();
+            });
     }
-    
-    const type = row.querySelector('.badge').textContent.trim().toLowerCase();
-    const minQty = row.querySelector('.tier-min').textContent.trim();
-    const maxQty = row.querySelector('.tier-max').textContent.trim();
-    const price = row.querySelector('.tier-price').textContent.replace('Rs.', '').replace(',', '').trim();
-    
-    // Create edit modal if not exists
-    let editModal = document.getElementById('editTierModal');
-    if (!editModal) {
-        createEditTierModal();
-        editModal = document.getElementById('editTierModal');
-    }
-    
-    document.getElementById('edit_tier_id').value = tierId;
-    document.getElementById('edit_tier_type').value = type;
-    document.getElementById('edit_tier_min').value = minQty;
-    document.getElementById('edit_tier_max').value = maxQty === '∞' ? '' : maxQty;
-    document.getElementById('edit_tier_price').value = price;
-    
-    new bootstrap.Modal(editModal).show();
-}
 
-// Create edit tier modal
-function createEditTierModal() {
-    const modalHtml = `
+    // Edit tier - open modal with data
+    function editTier(tierId) {
+        const row = document.getElementById('tier-row-' + tierId);
+        if (!row) {
+            console.error('Row not found for tier:', tierId);
+            return;
+        }
+
+        const type = row.querySelector('.badge').textContent.trim().toLowerCase();
+        const minQty = row.querySelector('.tier-min').textContent.trim();
+        const maxQty = row.querySelector('.tier-max').textContent.trim();
+        const price = row.querySelector('.tier-price').textContent.replace('Rs.', '').replace(',', '').trim();
+
+        // Create edit modal if not exists
+        let editModal = document.getElementById('editTierModal');
+        if (!editModal) {
+            createEditTierModal();
+            editModal = document.getElementById('editTierModal');
+        }
+
+        document.getElementById('edit_tier_id').value = tierId;
+        document.getElementById('edit_tier_type').value = type;
+        document.getElementById('edit_tier_min').value = minQty;
+        document.getElementById('edit_tier_max').value = maxQty === '∞' ? '' : maxQty;
+        document.getElementById('edit_tier_price').value = price;
+
+        new bootstrap.Modal(editModal).show();
+    }
+
+    // Create edit tier modal
+    function createEditTierModal() {
+        const modalHtml = `
         <div class="modal fade" id="editTierModal" tabindex="-1">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
@@ -592,48 +603,48 @@ function createEditTierModal() {
             </div>
         </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
 
-// Save edited tier
-async function saveEditedTier() {
-    const tierId = document.getElementById('edit_tier_id').value;
-    const type = document.getElementById('edit_tier_type').value;
-    const minQty = document.getElementById('edit_tier_min').value;
-    const maxQty = document.getElementById('edit_tier_max').value || null;
-    const price = document.getElementById('edit_tier_price').value;
-    
-    if (!minQty || !price) {
-        alert('Please fill Min Qty and Price');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('tier_id', tierId);
-    formData.append('customer_type', type);
-    formData.append('min_quantity', minQty);
-    if (maxQty) formData.append('max_quantity', maxQty);
-    formData.append('price_per_unit', price);
-    
-    try {
-        const response = await fetch('api/update_pricing.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('editTierModal')).hide();
-            managePricing(currentProductId);
-            showNotification('success', 'Pricing tier updated!');
-        } else {
-            alert(result.error || 'Failed to update tier');
+    // Save edited tier
+    async function saveEditedTier() {
+        const tierId = document.getElementById('edit_tier_id').value;
+        const type = document.getElementById('edit_tier_type').value;
+        const minQty = document.getElementById('edit_tier_min').value;
+        const maxQty = document.getElementById('edit_tier_max').value || null;
+        const price = document.getElementById('edit_tier_price').value;
+
+        if (!minQty || !price) {
+            alert('Please fill Min Qty and Price');
+            return;
         }
-    } catch (error) {
-        alert('Error updating tier');
+
+        const formData = new FormData();
+        formData.append('tier_id', tierId);
+        formData.append('customer_type', type);
+        formData.append('min_quantity', minQty);
+        if (maxQty) formData.append('max_quantity', maxQty);
+        formData.append('price_per_unit', price);
+
+        try {
+            const response = await fetch('api/update_pricing.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editTierModal')).hide();
+                managePricing(currentProductId);
+                showNotification('success', 'Pricing tier updated!');
+            } else {
+                alert(result.error || 'Failed to update tier');
+            }
+        } catch (error) {
+            alert('Error updating tier');
+        }
     }
-}
 
     async function editProduct(id) {
         // Fetch product details
@@ -744,24 +755,24 @@ async function saveEditedTier() {
         else { alert(result.error || 'Failed to update product'); }
     }
     function showNotification(type, message) {
-    let container = document.getElementById('notificationContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'notificationContainer';
-        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
-        document.body.appendChild(container);
-    }
-    
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-    notification.style.cssText = 'min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
-    notification.innerHTML = `
+        let container = document.getElementById('notificationContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notificationContainer';
+            container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+            document.body.appendChild(container);
+        }
+
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+        notification.style.cssText = 'min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+        notification.innerHTML = `
         <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    container.appendChild(notification);
-    setTimeout(() => notification.remove(), 5000);
-}
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+    }
 
     // Get unit options from database
     async function getUnitOptions(selectedUnit) {

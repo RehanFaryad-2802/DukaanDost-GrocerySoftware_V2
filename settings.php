@@ -178,6 +178,11 @@ while ($row = $stmt->fetch()) {
                             <i class="bi bi-hurricane"></i> Export Database Query
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a style="color:red;" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'restock_all.php' ? 'active bs-red' : ''; ?>" href="restock_all.php">
+                            <i class="bi bi-arrow-clockwise"></i></i> Restock All (999999)
+                        </a>
+                    </li>
                     
                 </ul>
             </div>

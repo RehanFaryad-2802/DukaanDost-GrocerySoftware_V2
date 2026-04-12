@@ -109,7 +109,7 @@ while ($row = $stmt->fetch()) {
             text-align: right;
             column-gap: 10px;
         }
-        
+
         td {
             column-gap: 10px;
             padding: 3px 0;
@@ -130,7 +130,8 @@ while ($row = $stmt->fetch()) {
         .bold {
             font-weight: bold;
         }
-        .text-center{
+
+        .text-center {
             text-align: center;
         }
 
@@ -156,7 +157,7 @@ while ($row = $stmt->fetch()) {
         td:nth-child(4) {
             width: 50%;
         }
-        
+
 
         @media print {
             body {
@@ -239,9 +240,18 @@ while ($row = $stmt->fetch()) {
                 <tr>
                     <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
                     <td class="text-center570"><?php echo number_format($item['unit_price'], 0); ?></td>
-                    <td class="" dir="rtl"><?php echo number_format($item['quantity'], 0) . ' ' . $unit; ?></td>
+                    <td class="" dir="rtl">
+                        <?php
+                        $qty = (float) $item['quantity'];
+                        if (floor($qty) == $qty) {
+                            echo $qty . ' ' . $unit;
+                        } else {
+                            echo rtrim(rtrim($qty, '0'), '.') . ' ' . $unit;
+                        }
+                        ?>
+                    </td>
                     <td dir="rtl" class="item-name item-col">
-                        #<?php echo $item_number++ . ' ' ;?> <?php echo htmlspecialchars($item['product_name']); ?>
+                        #<?php echo $item_number++ . ' '; ?>     <?php echo htmlspecialchars($item['product_name']); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

@@ -668,26 +668,45 @@ function editInvoice(invoiceId) {
         }
     });
 
-    // Load quick products
-    async function loadQuickProducts() {
-        const response = await fetch('api/search_product.php?q=');
+// Load quick products - Popular items first, fallback to first 10
+async function loadQuickProducts() {
+    try {
+        const response = await fetch('api/search_product.php?mode=popular');
         const products = await response.json();
-
+        
         let html = '';
-        products.slice(0, 8).forEach(product => {
-            html += `
-            <div class="col-3 mb-2">
-                <button class="btn btn-outline-primary w-100" 
-                        onclick="addToCart(${product.id}, '${product.name}', '${product.unit}', ${product.current_stock})">
-                    ${product.name}
-                </button>
-            </div>
-        `;
-        });
-
+        
+        if (products.length === 0) {
+            html = '<div class="col-12 text-muted text-center py-3">No products available</div>';
+        } else {
+            products.forEach(product => {
+                // Show sales badge if product has sales
+                const salesBadge = product.sales_count > 0 
+                    ? `<br><small class="text-success"><i class="bi bi-star-fill"></i> ${product.sales_count} sold</small>` 
+                    : '';
+                
+                html += `
+                    <div class="col-3 mb-2">
+                        <button class="btn btn-outline-primary w-100 h-100" 
+                                onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit}', ${product.current_stock})"
+                                style="min-height: 60px;">
+                            <strong>${product.name}</strong>
+                            ${salesBadge}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+        
         document.getElementById('quick_products').innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading quick products:', error);
+        document.getElementById('quick_products').innerHTML = 
+            '<div class="col-12 text-danger text-center py-3">Failed to load products</div>';
     }
-// Show notification toast
+}
+    // Show notification toast
 function showNotification(type, message) {
     let container = document.getElementById('notificationContainer');
     if (!container) {
