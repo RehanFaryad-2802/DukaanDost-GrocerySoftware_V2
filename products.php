@@ -385,7 +385,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                                 <label>Category</label>
                                 <select name="category" class="form-select">
                                     <option value="">Select Category</option>
-                                    ${getCategorySelectOptions(product.category)}
+                                    ${getCategorySelectOptions('')}
                                 </select>
                             </div>
                             <div class="mb-3">
