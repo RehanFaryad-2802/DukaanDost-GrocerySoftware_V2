@@ -266,23 +266,24 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                             <td>Rs. <?php echo number_format($retail, 0); ?></td>
                             <td>Rs. <?php echo number_format($wholesale, 0); ?></td>
                             <td>
-                                <td>
-    <div class="btn-group btn-group-sm">
-        <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
-        <button type="button" class="btn btn-outline-primary" onclick="editProduct(<?php echo $product['id']; ?>)">
-            <i class="bi bi-pencil"></i>
-        </button>
-        <button type="button" class="btn btn-outline-success" onclick="managePricing(<?php echo $product['id']; ?>)">
-            <i class="bi bi-tag"></i>
-        </button>
-        <a href="products.php?delete=<?php echo $product['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
-            <i class="bi bi-trash"></i>
-        </a>
-        <?php else: ?>
-        <span class="badge bg-secondary">View Only</span>
-        <?php endif; ?>
-    </div>
-</td>
+                                <div class="btn-group btn-group-sm">
+                                    <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
+                                        <button type="button" class="btn btn-outline-primary"
+                                            onclick="editProduct(<?php echo $product['id']; ?>)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success"
+                                            onclick="managePricing(<?php echo $product['id']; ?>)">
+                                            <i class="bi bi-tag"></i>
+                                        </button>
+                                        <a href="products.php?delete=<?php echo $product['id']; ?>"
+                                            class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">View Only</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -427,18 +428,18 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
     }
 
     function getCategorySelectOptions(selectedCategory = '') {
-    const categories = <?php 
+        const categories = <?php
         $stmt = $pdo->query("SELECT name FROM categories ORDER BY name");
         echo json_encode($stmt->fetchAll(PDO::FETCH_COLUMN));
-    ?>;
-    
-    let options = '';
-    categories.forEach(cat => {
-        const selected = (cat === selectedCategory) ? 'selected' : '';
-        options += `<option value="${cat}" ${selected}>${cat}</option>`;
-    });
-    return options;
-}
+        ?>;
+
+        let options = '';
+        categories.forEach(cat => {
+            const selected = (cat === selectedCategory) ? 'selected' : '';
+            options += `<option value="${cat}" ${selected}>${cat}</option>`;
+        });
+        return options;
+    }
 
     function toggleSelectAll(source) {
         document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = source.checked);
@@ -466,21 +467,21 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             });
     }
 
- async function editProduct(id) {
-    // Fetch product details
-    const response = await fetch(`api/get_product.php?id=${id}`);
-    const product = await response.json();
-    
-    if (product.error) {
-        showNotification('error', product.error);
-        return;
-    }
-    
-    // Get unit options
-    const unitOptions = await getUnitOptions(product.unit);
-    
-    const container = document.getElementById('addProductModalContainer');
-    container.innerHTML = `
+    async function editProduct(id) {
+        // Fetch product details
+        const response = await fetch(`api/get_product.php?id=${id}`);
+        const product = await response.json();
+
+        if (product.error) {
+            showNotification('error', product.error);
+            return;
+        }
+
+        // Get unit options
+        const unitOptions = await getUnitOptions(product.unit);
+
+        const container = document.getElementById('addProductModalContainer');
+        container.innerHTML = `
         <div class="modal fade" id="editProductModal" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -561,9 +562,9 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             </div>
         </div>
     `;
-    
-    new bootstrap.Modal(document.getElementById('editProductModal')).show();
-}  
+
+        new bootstrap.Modal(document.getElementById('editProductModal')).show();
+    }
     async function updateProduct(event, id) {
         event.preventDefault();
         const form = event.target;

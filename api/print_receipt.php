@@ -54,6 +54,7 @@ while ($row = $stmt->fetch()) {
             margin: 0;
             padding: 5px;
             box-sizing: border-box;
+            font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
             font-weight: 900;
         }
 
@@ -139,6 +140,11 @@ while ($row = $stmt->fetch()) {
             word-wrap: break-word;
         }
 
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 40%;
+        }
+
         @media print {
             body {
                 -webkit-print-color-adjust: exact;
@@ -199,7 +205,7 @@ while ($row = $stmt->fetch()) {
                 <th class="text-right">Amount</th>
                 <th class="text-right">Rate</th>
                 <th class="text-right">Qty</th>
-                <th>Item</th>
+                <th class="text-right item-col">Item</th>
             </tr>
         </thead>
 
@@ -220,7 +226,7 @@ while ($row = $stmt->fetch()) {
                     <td class="text-right"><?php echo number_format($item['total_price'], 0); ?></td>
                     <td class="text-right"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="text-right"><?php echo number_format($item['quantity'], 0) . $unit; ?></td>
-                    <td class="item-name">
+                    <td class="item-name item-col">
                         <?php echo htmlspecialchars($item['product_name']); ?>
                     </td>
                 </tr>
