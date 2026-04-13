@@ -174,6 +174,11 @@ while ($row = $stmt->fetch()) {
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'import_products.php' ? 'active bg-primary' : ''; ?>" href="import_products.php">
+                            <i class="bi bi-upload"></i> Import Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.sql' ? 'active bg-primary' : ''; ?>" href="sql/install.sql">
                             <i class="bi bi-hurricane"></i> Export Database Query
                         </a>
@@ -181,6 +186,11 @@ while ($row = $stmt->fetch()) {
                     <li class="nav-item">
                         <a style="color:red;" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'restock_all.php' ? 'active bs-red' : ''; ?>" href="restock_all.php">
                             <i class="bi bi-arrow-clockwise"></i></i> Restock All (999999)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a style="color:red;" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'reset_invoices.php' ? 'active bs-red' : ''; ?>" href="reset_invoices.php">
+                            <i class="bi bi-cart"></i></i> Reset Invoices
                         </a>
                     </li>
                     
