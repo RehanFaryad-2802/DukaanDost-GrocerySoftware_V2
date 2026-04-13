@@ -520,19 +520,21 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         }
     }
 
-    // Global variables for pricing edit
-    let currentProductId = 0;
+ let currentProductId = 0;
 
-    // Update managePricing to store current product ID
-    function managePricing(productId) {
-        currentProductId = productId;
-        fetch(`api/get_pricing.php?product_id=${productId}`)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('pricingModalBody').innerHTML = html;
-                new bootstrap.Modal(document.getElementById('pricingModal')).show();
-            });
-    }
+function managePricing(productId) {
+    currentProductId = productId;
+    
+    fetch(`api/get_pricing.php?product_id=${productId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('pricingModalBody').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('pricingModal')).show();
+        })
+        .catch(error => {
+            showNotification('error', 'Failed to load pricing tiers');
+        });
+}
 
     // Edit tier - open modal with data
     function editTier(tierId) {
@@ -800,28 +802,160 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
 
     function deleteTier(tierId) {
         if (confirm('Delete this pricing tier?')) {
+            // Get current product ID from the modal context
+            const productId = currentProductId;
+
             fetch(`api/delete_pricing.php?id=${tierId}`)
                 .then(response => response.json())
-                .then(data => { if (data.success) location.reload(); });
+                .then(data => {
+                    if (data.success) {
+                        showNotification('success', 'Tier deleted!');
+                        // Refresh the modal content
+                        managePricing(productId);
+                    } else {
+                        alert('Failed to delete tier');
+                    }
+                });
         }
     }
+    // When pricing modal is closed, update the products table
+    document.addEventListener('DOMContentLoaded', function () {
+        const pricingModal = document.getElementById('pricingModal');
+        if (pricingModal) {
+            pricingModal.addEventListener('hidden.bs.modal', function () {
+                // Clean up backdrops
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
 
+                // Update the table with fresh prices
+                refreshProductsTable();
+            });
+        }
+    });
+
+    // Function to refresh only the products table data
+    function refreshProductsTable() {
+        // Get current filter/search params
+        const urlParams = new URLSearchParams(window.location.search);
+        const category = urlParams.get('category') || '';
+        const search = urlParams.get('search') || '';
+
+        // Fetch updated products list
+        fetch(`api/get_products_list.php?category=${category}&search=${search}`)
+            .then(response => response.json())
+            .then(products => {
+                updateTableRows(products);
+            })
+            .catch(error => {
+                console.error('Failed to refresh table:', error);
+                // Fallback: reload page if API fails
+                location.reload();
+            });
+    }
+
+    // Update table rows with new data
+    function updateTableRows(products) {
+        const tbody = document.querySelector('tbody');
+        if (!tbody) return;
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        if (products.length === 0) {
+            tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No products found.</p>
+                </td>
+            </tr>
+        `;
+            return;
+        }
+
+        // Add updated rows
+        products.forEach(product => {
+            const stockClass = product.current_stock <= product.min_stock_alert ? 'danger' : 'success';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td><input type="checkbox" name="selected_products[]" value="${product.id}" class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
+            <td><small>${escapeHtml(product.code)}</small></td>
+            <td dir="rtl"><strong>${escapeHtml(product.name)}</strong></td>
+            <td>${escapeHtml(product.category || '-')}</td>
+            <td>${escapeHtml(product.unit || 'Piece')}</td>
+            <td><span class="badge bg-${stockClass}">${product.current_stock}</span></td>
+            <td>Rs. ${parseFloat(product.purchase_price || 0).toFixed(0)}</td>
+            <td>Rs. ${parseFloat(product.retail_price || 0).toFixed(0)}</td>
+            <td>Rs. ${parseFloat(product.wholesale_price || 0).toFixed(0)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" onclick="editProduct(${product.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="managePricing(${product.id})">
+                        <i class="bi bi-tag"></i>
+                    </button>
+                    <a href="products.php?delete=${product.id}" class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Helper to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
     function addPricingTier(productId) {
         const type = document.getElementById('new_tier_type').value;
         const minQty = document.getElementById('new_tier_min').value;
         const maxQtyInput = document.getElementById('new_tier_max');
         const maxQty = maxQtyInput.value.trim() === '' ? null : maxQtyInput.value;
         const price = document.getElementById('new_tier_price').value;
-        if (!minQty || !price) { alert('Please fill Min Qty and Price'); return; }
+
+        if (!minQty || !price) {
+            alert('Please fill Min Qty and Price');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('product_id', productId);
         formData.append('customer_type', type);
         formData.append('min_quantity', minQty);
-        if (maxQty !== null) { formData.append('max_quantity', maxQty); }
+        if (maxQty !== null) {
+            formData.append('max_quantity', maxQty);
+        }
         formData.append('price_per_unit', price);
-        fetch('api/save_pricing.php', { method: 'POST', body: formData })
+
+        fetch('api/save_pricing.php', {
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
-            .then(data => { if (data.success) { managePricing(productId); } else { alert(data.error); } });
+            .then(data => {
+                if (data.success) {
+                    // Show success message briefly
+                    showNotification('success', 'Tier added!');
+
+                    // Refresh the pricing modal content (NOT the whole page)
+                    managePricing(productId);
+
+                    // Clear the input fields for next tier
+                    document.getElementById('new_tier_min').value = '';
+                    document.getElementById('new_tier_max').value = '';
+                    document.getElementById('new_tier_price').value = '';
+                    document.getElementById('new_tier_min').focus();
+                } else {
+                    alert(data.error);
+                }
+            });
     }
 </script>
 
