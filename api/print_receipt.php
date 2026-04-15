@@ -205,7 +205,7 @@ while ($row = $stmt->fetch()) {
         <span>Invoice: <?php echo $invoice['invoice_no']; ?></span>
     </div>
     <div class="info-row">
-        <span>Date: <?php echo date('d-m-Y h:i A'); ?></span>
+        <span>Date: <?php echo date('d/m/Y - h:i A', strtotime($invoice['created_at'])); ?></span>
     </div>
 
     <div class="info-row">
@@ -217,9 +217,9 @@ while ($row = $stmt->fetch()) {
     <table>
         <thead>
             <tr>
-                <th class="text-right">Amount</th>
-                <th class="text-right">Rate</th>
-                <th class="text-right">Qty</th>
+                <th class="text-center">Amount</th>
+                <th class="text-center">Rate</th>
+                <th>Qty</th>
                 <th class="text-right item-col">Item</th>
             </tr>
         </thead>
@@ -239,7 +239,7 @@ while ($row = $stmt->fetch()) {
                 ?>
                 <tr>
                     <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
-                    <td class="text-center570"><?php echo number_format($item['unit_price'], 0); ?></td>
+                    <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="" dir="rtl">
                         <?php
                         $qty = (float) $item['quantity'];
@@ -283,8 +283,8 @@ while ($row = $stmt->fetch()) {
     <div class="divider"></div>
 
     <div class="footer">
+        <p>Printing Time: <?php echo date('d/m/Y - h:i A', strtotime('-30 minutes')); ?></p>
         <p><?php echo $settings['receipt_header'] ?? 'Thank you for shopping :)'; ?></p>
-        <p><?php echo date('d-m-Y h:i A', strtotime('-30 minutes')); ?></p>
     </div>
 
     <div class="text-center" style="margin-top: 5px;">

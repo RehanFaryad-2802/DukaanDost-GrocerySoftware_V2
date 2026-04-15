@@ -139,3 +139,58 @@ body {
         opacity: 1;
     }
 }
+#payment_status {
+    transition: all 0.3s ease;
+}
+
+#amount_received:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+.search-result-item.selected {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+.search-result-item.selected .badge {
+    background-color: white !important;
+    color: #0d6efd !important;
+}
+
+.search-result-item.selected small {
+    color: #e0e0e0 !important;
+}
+.search-result-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.search-result-item.selected {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+.search-result-item.selected .badge {
+    background-color: white !important;
+    color: #0d6efd !important;
+    border: none;
+}
+
+.search-result-item.selected small {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.search-result-item:hover {
+    background-color: #e9ecef;
+}
+
+.search-result-item.selected:hover {
+    background-color: #0b5ed7 !important;
+}
+.search-result-item.selected {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+.search-result-item.selected small {
+    color: rgba(255,255,255,0.8) !important;
+}

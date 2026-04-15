@@ -38,9 +38,22 @@ if (isset($_POST['edit_unit'])) {
     
     if (!empty($name) && !empty($symbol)) {
         try {
+            // Get old symbol
+            $stmt = $pdo->prepare("SELECT symbol FROM units WHERE id = ?");
+            $stmt->execute([$id]);
+            $oldSymbol = $stmt->fetchColumn();
+            
+            // Update unit in units table
             $stmt = $pdo->prepare("UPDATE units SET name = ?, symbol = ?, type = ? WHERE id = ?");
             $stmt->execute([$name, $symbol, $type, $id]);
-            $success = "Unit updated successfully!";
+            
+            // Update all products using this unit
+            $stmt = $pdo->prepare("UPDATE products SET unit = ? WHERE unit = ?");
+            $stmt->execute([$symbol, $oldSymbol]);
+            
+            $updatedProducts = $stmt->rowCount();
+            $success = "Unit updated! $updatedProducts products updated.";
+            
         } catch (PDOException $e) {
             if ($e->errorInfo[1] == 1062) {
                 $error = "Unit symbol '$symbol' already exists!";

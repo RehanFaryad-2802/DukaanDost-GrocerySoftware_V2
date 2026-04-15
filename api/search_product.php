@@ -24,7 +24,7 @@ if ($mode === 'popular') {
         GROUP BY p.id
         HAVING sales_count > 0
         ORDER BY sales_count DESC, p.name ASC
-        LIMIT 10
+        LIMIT 36
     ");
     $products = $stmt->fetchAll();
     
@@ -42,7 +42,7 @@ if ($mode === 'popular') {
             FROM products p
             WHERE p.status = 'active' AND p.current_stock > 0
             ORDER BY p.name ASC
-            LIMIT 10
+            LIMIT 36
         ");
         $products = $stmt->fetchAll();
     }
@@ -60,7 +60,7 @@ if ($mode === 'search' || empty($mode)) {
             FROM products 
             WHERE status = 'active' AND current_stock > 0
             ORDER BY name ASC
-            LIMIT 10
+            LIMIT 50
         ");
         $stmt->execute();
     } else {
@@ -71,7 +71,7 @@ if ($mode === 'search' || empty($mode)) {
             WHERE (name LIKE ? OR code LIKE ?) 
             AND status = 'active' AND current_stock > 0
             ORDER BY name ASC
-            LIMIT 10
+            LIMIT 50
         ");
         $stmt->execute(["%$search%", "%$search%"]);
     }
