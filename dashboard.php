@@ -12,7 +12,7 @@ $stmt = $pdo->prepare("
     FROM invoices i
     JOIN users u ON i.created_by = u.id
     ORDER BY i.created_at DESC 
-    LIMIT 10
+    LIMIT 999999999
 ");
 $stmt->execute();
 $recent_invoices = $stmt->fetchAll();
@@ -112,7 +112,7 @@ $recent_invoices = $stmt->fetchAll();
             <div class="card-header bg-primary text-white">
                 <i class="bi bi-receipt"></i> Recent Invoices
             </div>
-            <div class="card-body">
+            <div class="card-body recent_bill">
                 <table class="table table-sm">
                     <thead>
                         <tr>
@@ -163,6 +163,13 @@ $recent_invoices = $stmt->fetchAll();
 
 <?php require_once 'includes/footer.php'; ?>
 
+
+<style>
+    .recent_bill{
+        height: 500px;
+        overflow-y: auto;
+    }
+</style>
 
 <script>
     // Edit invoice - redirect to billing page with invoice data
