@@ -120,6 +120,7 @@ if ($edit_mode > 0) {
                         <tr>
                             <th>Product</th>
                             <th width="100">Quantity</th>
+                            <th width="80">Unit</th>
                             <th width="120">Unit Price</th>
                             <th width="120">Total</th>
                             <th width="50"></th>
@@ -240,147 +241,303 @@ if ($edit_mode > 0) {
 
 <script>
     let cart = [];
+    let currentUnitProductId = 0;
     let customerType = 'retail';
     let searchResults = [];
     let selectedResultIndex = -1;
-    // Check if in edit mode
+    let currentProductId = 0;
+    let packageCount = 0;
+    async function addPackageRow() {
+        packageCount++;
+        const container = document.getElementById('packagesContainer');
+        if (!container) return;
+
+        let unitsHtml = '';
+        try {
+            const response = await fetch('api/get_units.php');
+            const units = await response.json();
+            unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+        } catch (e) {
+            unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'input-group mb-2';
+        row.id = `package_row_${packageCount}`;
+        row.innerHTML = `
+        <select name="package_name[]" class="form-select" required>
+            <option value="">Select Unit</option>
+            ${unitsHtml}
+        </select>
+        <span class="input-group-text">=</span>
+        <input type="number" name="package_multiplier[]" class="form-control" placeholder="Qty (e.g., 12)" step="1" min="1" required>
+        <button type="button" class="btn btn-outline-danger" onclick="removePackageRow(${packageCount})">
+            <i class="bi bi-x"></i>
+        </button>
+    `;
+
+        container.appendChild(row);
+    }
+
+    function removePackageRow(id) {
+        const row = document.getElementById(`package_row_${id}`);
+        if (row) row.remove();
+    }
+
+    function savePackage(productId) {
+        const name = document.getElementById('new_package_name').value;
+        const multiplier = document.getElementById('new_package_multiplier').value;
+
+        if (!name || !multiplier) {
+            alert('Please select a unit and enter multiplier');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('package_name', name);
+        formData.append('multiplier', multiplier);
+
+        fetch('api/save_product_package.php', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('managePackagesModal')).hide();
+                    managePackages(productId, document.querySelector('.modal-title').textContent.replace('Manage Packages - ', ''));
+                } else {
+                    alert(data.error);
+                }
+            });
+    }
+
+    function deletePackage(id) {
+        if (!confirm('Delete this package?')) return;
+
+        fetch(`api/delete_product_package.php?id=${id}`)
+            .then(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
+                const productName = document.querySelector('.modal-title').textContent.replace('Manage Packages - ', '');
+                modal.hide();
+                managePackages(currentUnitProductId, productName);
+            });
+    }
+    // Manage packages for existing product
+    async function managePackages(productId, productName) {
+        currentUnitProductId = productId;
+
+        // Fetch units for dropdown
+        let unitsHtml = '';
+        try {
+            const response = await fetch('api/get_units.php');
+            const units = await response.json();
+            unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+        } catch (e) {
+            unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+        }
+
+        // Fetch existing packages
+        fetch(`api/get_product_packages.php?product_id=${productId}`)
+            .then(response => response.json())
+            .then(packages => {
+                let html = `
+                <div class="modal fade" id="managePackagesModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-boxes"></i> Manage Packages - ${productName}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Package</th>
+                                            <th>Multiplier</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="packagesList">
+            `;
+
+                if (packages.length === 0) {
+                    html += `<tr><td colspan="3" class="text-center text-muted">No packages added</td></tr>`;
+                } else {
+                    packages.forEach(pkg => {
+                        html += `
+                        <tr>
+                            <td>${pkg.package_name}</td>
+                            <td>${pkg.multiplier}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deletePackage(${pkg.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    });
+                }
+
+                html += `
+                                </tbody>
+                            </table>
+                            <hr>
+                            <h6>Add New Package</h6>
+                            <div class="input-group mb-2">
+                                <select id="new_package_name" class="form-select">
+                                    <option value="">Select Unit</option>
+                                    ${unitsHtml}
+                                </select>
+                                <span class="input-group-text">=</span>
+                                <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)">
+                                <button class="btn btn-primary" onclick="savePackage(${productId})">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+
+                const existingModal = document.getElementById('managePackagesModal');
+                if (existingModal) existingModal.remove();
+
+                document.body.insertAdjacentHTML('beforeend', html);
+                new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
+            });
+    }
+    // Delete package
 
     // Check if in edit mode
     <?php if ($editing_invoice): ?>
-        console.log('Edit mode activated for invoice: <?php echo $editing_invoice['invoice_no']; ?>');
+            (async function () {
+                console.log('Edit mode activated for invoice: <?php echo $editing_invoice['invoice_no']; ?>');
 
-        // Set customer type
-        customerType = '<?php echo $editing_invoice['customer_type']; ?>';
-        document.getElementById('customer_type').value = customerType;
+                customerType = '<?php echo $editing_invoice['customer_type']; ?>';
+                document.getElementById('customer_type').value = customerType;
+                updatePricingNote();
 
-        // Set customer details
-        document.getElementById('customer_name').value = '<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>';
-        document.getElementById('customer_phone').value = '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>';
+                document.getElementById('customer_name').value = '<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>';
+                document.getElementById('customer_phone').value = '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>';
 
+                const rawCart = <?php echo json_encode($editing_invoice['items']); ?>;
+                cart = [];
 
-        // Load and clean cart items
-        const rawCart = <?php echo json_encode($editing_invoice['items']); ?>;
-        cart = rawCart.map(item => ({
-            product_id: parseInt(item.product_id) || 0,
-            product_name: item.product_name,
-            quantity: parseFloat(item.quantity) || 0,
-            unit_price: parseFloat(item.unit_price) || 0,
-            total_price: parseFloat(item.total_price) || 0,
-            tier_info: item.tier_info || '',
-            unit: 'piece'
-        }));
-        // cart.reverse();
-        console.log('Cleaned cart items:', cart);
-        console.log('Loaded cart items:', cart.length);
+                for (const item of rawCart) {
+                    let productUnit = 'Piece';
+                    try {
+                        const response = await fetch(`api/get_product.php?id=${item.product_id}`);
+                        const product = await response.json();
+                        productUnit = product.unit || 'Piece';
+                    } catch (e) { }
 
-        // Render cart and update totals
-        renderCart();
-        updateTotal();
-
-        // Change complete button to update button
-        const completeBtn = document.querySelector('button[onclick="completeSale()"]');
-        if (completeBtn) {
-            completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Invoice (F12)';
-            completeBtn.className = 'btn btn-warning btn-lg w-100 mb-2';
-        }
-
-        // Show edit banner
-        const banner = document.createElement('div');
-        banner.className = 'alert alert-warning mb-3';
-        banner.innerHTML = `
-    <i class="bi bi-pencil-square"></i> 
-    <strong>Editing Invoice:</strong> <?php echo $editing_invoice['invoice_no']; ?> 
-    <small class="ms-2">(Changes will create a new invoice version)</small>
-    <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
-`;
-        const mainContainer = document.querySelector('main .row') || document.querySelector('main');
-        if (mainContainer) {
-            mainContainer.insertBefore(banner, mainContainer.firstChild);
-        }
-
-        // Store original invoice ID
-        const EDIT_MODE = true;
-        const OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
-
-        // Override complete function for edit mode
-        const originalComplete = completeSale;
-        completeSale = async function () {
-            await updateExistingInvoice(OLD_INVOICE_ID);
-        };
-        // Update existing invoice
-        async function updateExistingInvoice(oldInvoiceId) {
-            if (cart.length === 0) {
-                showNotification('error', 'Cart is empty!');
-                return;
-            }
-
-            const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-            const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
-            const discountType = document.getElementById('discount_type').value;
-
-            let discount = 0;
-            if (discountType === 'percent') {
-                discount = subtotal * (discountInput / 100);
-            } else {
-                discount = discountInput;
-            }
-
-            const total = Math.max(0, subtotal - discount);
-
-            const invoiceData = {
-                action: 'update_invoice',
-                old_invoice_id: oldInvoiceId,
-                customer_name: document.getElementById('customer_name').value,
-                customer_phone: document.getElementById('customer_phone').value,
-                customer_type: customerType,
-                subtotal: subtotal,
-                discount: discount,
-                total: total,
-                payment_method: 'cash', // Default for edits
-                items: cart.map(item => ({
-                    product_id: item.product_id,
-                    product_name: item.product_name,
-                    quantity: item.quantity,
-                    unit_price: item.unit_price,
-                    total_price: item.total_price,
-                    tier_info: item.tier_info || null
-                }))
-            };
-
-            console.log('Updating invoice:', invoiceData);
-
-            try {
-                const response = await fetch('api/edit_invoice.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(invoiceData)
-                });
-
-                const result = await response.json();
-                console.log('Update result:', result);
-
-                if (result.success) {
-                    window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
-                    showNotification('success', result.message || 'Invoice updated!');
-
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.php';
-                    }, 2000);
-                } else {
-                    showNotification('error', result.error || 'Failed to update invoice');
+                    cart.push({
+                        product_id: parseInt(item.product_id) || 0,
+                        product_name: item.product_name,
+                        base_unit: productUnit,
+                        display_unit: productUnit,
+                        actual_quantity: parseFloat(item.quantity) || 0,
+                        display_quantity: parseFloat(item.quantity) || 0,
+                        unit_price: parseFloat(item.unit_price) || 0,
+                        total_price: parseFloat(item.total_price) || 0,
+                        tier_info: item.tier_info || '',
+                        max_stock: 999999
+                    });
                 }
-            } catch (error) {
-                console.error('Update error:', error);
-                showNotification('error', 'Error updating invoice');
-            }
-        }
 
-        // Hide payment method for edit mode (keep original payment method)
-        document.getElementById('payment_method').closest('.mb-3').style.display = 'none';
+                console.log('Loaded cart items:', cart.length);
+
+                await renderCart();
+                updateTotal();
+
+                const completeBtn = document.querySelector('button[onclick="completeSale()"]');
+                if (completeBtn) {
+                    completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Invoice (F12)';
+                    completeBtn.className = 'btn btn-warning btn-lg w-100 mb-2';
+                    completeBtn.setAttribute('onclick', 'completeSale()');
+                }
+
+                const banner = document.createElement('div');
+                banner.className = 'alert alert-warning mb-3';
+                banner.innerHTML = `
+        <i class="bi bi-pencil-square"></i> 
+        <strong>Editing Invoice:</strong> <?php echo $editing_invoice['invoice_no']; ?> 
+        <small class="ms-2">(Changes will create a new invoice version)</small>
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+                const mainContainer = document.querySelector('main .row') || document.querySelector('main');
+                if (mainContainer) {
+                    mainContainer.insertBefore(banner, mainContainer.firstChild);
+                }
+
+                window.EDIT_MODE = true;
+                window.OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
+
+                // Override completeSale function
+                window.originalCompleteSale = completeSale;
+                completeSale = async function () {
+                    await updateExistingInvoice(window.OLD_INVOICE_ID);
+                };
+
+                const paymentSection = document.getElementById('payment_method').closest('.mb-3');
+                if (paymentSection) paymentSection.style.display = 'none';
+
+            })();
     <?php endif; ?>
 
 
-
+    async function updateExistingInvoice(oldInvoiceId) {
+        if (cart.length === 0) {
+            showNotification('error', 'Cart is empty!');
+            return;
+        }
+        const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
+        const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
+        const discountType = document.getElementById('discount_type').value;
+        let discount = 0;
+        if (discountType === 'percent') {
+            discount = subtotal * (discountInput / 100);
+        } else {
+            discount = discountInput;
+        }
+        const total = Math.max(0, subtotal - discount);
+        const invoiceData = {
+            action: 'update_invoice',
+            old_invoice_id: oldInvoiceId,
+            customer_name: document.getElementById('customer_name').value,
+            customer_phone: document.getElementById('customer_phone').value,
+            customer_type: customerType,
+            subtotal: subtotal,
+            discount: discount,
+            total: total,
+            payment_method: 'cash',
+            items: cart.map(item => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                quantity: item.actual_quantity || item.quantity || 0,
+                unit_price: item.unit_price || 0,
+                total_price: item.total_price || 0,
+                tier_info: item.tier_info || ''
+            }))
+        };
+        try {
+            const response = await fetch('api/edit_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(invoiceData)
+            });
+            const result = await response.json();
+            if (result.success) {
+                window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
+                showNotification('success', result.message || 'Invoice updated!');
+                setTimeout(() => { window.location.href = 'dashboard.php'; }, 2000);
+            } else {
+                showNotification('error', result.error || 'Failed to update invoice');
+            }
+        } catch (error) {
+            showNotification('error', 'Error updating invoice');
+        }
+    }
     // Calculate change/balance based on amount received
     function calculateChange() {
         const total = getGrandTotal();
@@ -486,107 +643,137 @@ if ($edit_mode > 0) {
             document.getElementById('payment_status').style.display = 'none';
         }
     };
-    async function updateCustomerType() {
-        customerType = document.getElementById('customer_type').value;
+    function updateCustomerType() {
+    customerType = document.getElementById('customer_type').value;
+    const note = document.getElementById('pricing_note');
 
-        // Show loading indicator
-        const oldType = customerType;
-
-        // Recalculate all items in cart with new customer type
-        if (cart.length > 0) {
-            // Clear and rebuild cart with new pricing
-            const currentItems = [...cart];
-            cart = [];
-
-            for (const item of currentItems) {
-                await addToCartWithQuantity(
-                    item.product_id,
-                    item.product_name,
-                    item.unit,
-                    item.max_stock || 999999,
-                    item.quantity
-                );
-            }
-        }
-
-        // Update the display
-        renderCart();
-        updateTotal();
-
-        // Show notification
-        const typeText = customerType === 'wholesale' ? 'Wholesale' : 'Retail';
-        console.log(`Switched to ${typeText} pricing`);
-    }
-
-    async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
-    // Get price from server with current customer type
-    const formData = new FormData();
-    formData.append('product_id', productId);
-    formData.append('quantity', quantity);
-    formData.append('customer_type', customerType);
-
-    const response = await fetch('api/get_price.php', {
-        method: 'POST',
-        body: formData
-    });
-    const priceData = await response.json();
-
-    if (priceData.error) {
-        alert(priceData.error);
-        return;
-    }
-
-    // Check if product already exists in cart
-    const existingIndex = cart.findIndex(item => item.product_id === productId);
-
-    if (existingIndex >= 0) {
-        // Product exists - add to existing quantity
-        const existingItem = cart[existingIndex];
-        const newQuantity = existingItem.quantity + parseFloat(quantity);
-        
-        // Check if new total exceeds stock
-        if (newQuantity > maxStock) {
-            alert(`Cannot add more! Total would exceed available stock (${maxStock} ${unit} available, already have ${existingItem.quantity} in cart)`);
-            return;
-        }
-        
-        // Update quantity and recalculate price
-        cart[existingIndex].quantity = newQuantity;
-        
-        // Recalculate price with new quantity
-        const updateFormData = new FormData();
-        updateFormData.append('product_id', productId);
-        updateFormData.append('quantity', newQuantity);
-        updateFormData.append('customer_type', customerType);
-        
-        const updateResponse = await fetch('api/get_price.php', {
-            method: 'POST',
-            body: updateFormData
-        });
-        const updatePriceData = await updateResponse.json();
-        
-        cart[existingIndex].unit_price = updatePriceData.unit_price;
-        cart[existingIndex].total_price = updatePriceData.total_price;
-        cart[existingIndex].tier_info = updatePriceData.tier_info || `${updatePriceData.tier_min} - ${updatePriceData.tier_max || '∞'} ${unit}`;
-        
-        showNotification('success', `Updated ${productName} quantity to ${newQuantity} ${unit}`);
+    if (customerType === 'wholesale') {
+        note.innerHTML = '📦 Wholesale pricing applied';
+        note.className = 'text-primary';
     } else {
-        // New product - add to cart
-        cart.unshift({
-            product_id: productId,
-            product_name: productName,
-            quantity: parseFloat(quantity),
-            unit: unit,
-            unit_price: priceData.unit_price,
-            total_price: priceData.total_price,
-            tier_info: priceData.tier_info || `${priceData.tier_min} - ${priceData.tier_max || '∞'} ${unit}`,
-            max_stock: maxStock
-        });
-        
-        showNotification('success', `Added ${quantity} ${unit} ${productName}`);
+        note.innerHTML = '🛒 Retail pricing applied';
+        note.className = 'text-success';
+    }
+
+    if (cart.length > 0) {
+        recalculateCartPrices();
     }
 }
+   async function recalculateCartPrices() {
+    for (let item of cart) {
+        if (!item || !item.product_id) continue;
 
+        const actualQty = item.actual_quantity || item.quantity || 0;
+        const productId = item.product_id;
+
+        if (productId <= 0 || actualQty <= 0) continue;
+
+        // CRITICAL: Save the original base_unit from the product itself
+        // Fetch the actual product unit from database to ensure it's correct
+        let correctBaseUnit = item.base_unit || 'Piece';
+        try {
+            const response = await fetch(`api/get_product.php?id=${productId}`);
+            const product = await response.json();
+            correctBaseUnit = product.unit || 'Piece';
+        } catch (e) {
+            console.error('Failed to fetch product unit:', e);
+        }
+
+        // Save display values
+        const savedDisplayUnit = item.display_unit || correctBaseUnit;
+        const savedDisplayQty = item.display_quantity || actualQty;
+
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('quantity', actualQty);
+        formData.append('customer_type', customerType);
+
+        try {
+            const response = await fetch('api/get_price.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const text = await response.text();
+            if (text.startsWith('<')) continue;
+
+            const priceData = JSON.parse(text);
+
+            // Update price data
+            item.unit_price = priceData.unit_price || 0;
+            item.total_price = priceData.total_price || 0;
+            item.tier_info = priceData.tier_info || '';
+
+            // RESTORE all unit values - DO NOT overwrite with "Piece"
+            item.base_unit = correctBaseUnit;
+            item.display_unit = savedDisplayUnit;
+            item.display_quantity = savedDisplayQty;
+
+        } catch (error) {
+            console.error('Recalculate error:', error);
+        }
+    }
+
+    renderCart();
+    updateTotal();
+}
+    
+    async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('quantity', quantity);
+        formData.append('customer_type', customerType);
+
+        try {
+            const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+            const text = await response.text();
+
+            if (text.startsWith('<')) {
+                console.error('API returned HTML');
+                return;
+            }
+
+            const priceData = JSON.parse(text);
+
+            const existingIndex = cart.findIndex(item =>
+                item.product_id === productId && item.display_unit === unit
+            );
+
+            if (existingIndex >= 0) {
+                const item = cart[existingIndex];
+                const newQty = (item.actual_quantity || 0) + quantity;
+
+                if (newQty > maxStock) {
+                    alert(`Only ${maxStock} ${unit} available!`);
+                    return;
+                }
+
+                item.actual_quantity = newQty;
+                item.display_quantity = (item.display_quantity || 0) + quantity;
+                item.total_price = priceData.total_price || 0;
+                item.unit_price = priceData.unit_price || 0;
+                item.tier_info = priceData.tier_info || '';
+            } else {
+                cart.unshift({
+                    product_id: productId,
+                    product_name: productName,
+                    base_unit: unit,
+                    display_unit: unit,
+                    actual_quantity: quantity,
+                    display_quantity: quantity,
+                    unit_price: priceData.unit_price || 0,
+                    total_price: priceData.total_price || 0,
+                    tier_info: priceData.tier_info || '',
+                    max_stock: maxStock
+                });
+            }
+
+            renderCart();
+            updateTotal();
+        } catch (error) {
+            console.error('Add to cart error:', error);
+        }
+    }
     // const originalSearchProduct = searchProduct;
     async function searchProduct(query) {
         if (query.length < 2) {
@@ -634,21 +821,21 @@ if ($edit_mode > 0) {
         }
     }
 
-   async function addToCart(productId, productName, unit, maxStock) {
-    const quantity = prompt(`Enter quantity for ${productName} (${unit}):`, '1');
-    if (!quantity || quantity <= 0) return;
-    if (parseFloat(quantity) > maxStock) {
-        alert(`Only ${maxStock} ${unit} available in stock!`);
-        return;
+    async function addToCart(productId, productName, unit, maxStock) {
+        const quantity = prompt(`Enter quantity for ${productName} (${unit}):`, '1');
+        if (!quantity || quantity <= 0) return;
+        if (parseFloat(quantity) > maxStock) {
+            alert(`Only ${maxStock} ${unit} available in stock!`);
+            return;
+        }
+
+        await addToCartWithQuantity(productId, productName, unit, maxStock, quantity);
+
+        renderCart();
+        updateTotal();
+        document.getElementById('search_product').value = '';
+        document.getElementById('search_results').innerHTML = '';
     }
-
-    await addToCartWithQuantity(productId, productName, unit, maxStock, quantity);
-
-    renderCart();
-    updateTotal();
-    document.getElementById('search_product').value = '';
-    document.getElementById('search_results').innerHTML = '';
-}
 
     async function updateItemPrice(index, newQuantity) {
         const item = cart[index];
@@ -674,55 +861,225 @@ if ($edit_mode > 0) {
         cart[index].tier_info = priceData.tier_info || `${priceData.tier_min} - ${priceData.tier_max || '∞'} ${item.unit}`;
     }
 
-    function renderCart() {
-        const tbody = document.getElementById('cart_items');
 
+    // async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
+    //     const formData = new FormData();
+    //     formData.append('product_id', productId);
+    //     formData.append('quantity', quantity);
+    //     formData.append('customer_type', customerType);
+
+    //     try {
+    //         const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+    //         const text = await response.text();
+
+    //         // Check if response is HTML (error)
+    //         if (text.startsWith('<')) {
+    //             console.error('API returned HTML:', text);
+    //             alert('Server error. Check API files.');
+    //             return;
+    //         }
+
+    //         const priceData = JSON.parse(text);
+
+    //         if (priceData.error) {
+    //             alert(priceData.error);
+    //             return;
+    //         }
+
+    //         const existingIndex = cart.findIndex(item =>
+    //             item.product_id === productId && item.display_unit === unit
+    //         );
+
+    //         if (existingIndex >= 0) {
+    //             const item = cart[existingIndex];
+    //             const newQty = (item.actual_quantity || 0) + quantity;
+
+    //             if (newQty > maxStock) {
+    //                 alert(`Only ${maxStock} ${unit} available!`);
+    //                 return;
+    //             }
+
+    //             item.actual_quantity = newQty;
+    //             item.display_quantity = (item.display_quantity || 0) + quantity;
+    //             item.total_price = priceData.total_price || 0;
+    //             item.unit_price = priceData.unit_price || 0;
+    //             item.tier_info = priceData.tier_info || '';
+    //         } else {
+    //             cart.unshift({
+    //                 product_id: productId,
+    //                 product_name: productName,
+    //                 base_unit: unit,
+    //                 display_unit: unit,
+    //                 actual_quantity: quantity,
+    //                 display_quantity: quantity,
+    //                 unit_price: priceData.unit_price || 0,
+    //                 total_price: priceData.total_price || 0,
+    //                 tier_info: priceData.tier_info || '',
+    //                 max_stock: maxStock
+    //             });
+    //         }
+
+    //         renderCart();
+    //         updateTotal();
+    //     } catch (error) {
+    //         console.error('Add to cart error:', error);
+    //         alert('Error adding product');
+    //     }
+    // }
+
+    async function renderCart() {
+        const tbody = document.getElementById('cart_items');
         const countEl = document.getElementById('cart_item_count');
-        if (countEl) {
-            const itemCount = cart.length;
-            const totalQty = cart.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
-            countEl.textContent = `${itemCount}`;
-        }
+        if (countEl) countEl.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+
         if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No items in cart. Search and add products above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No items in cart.</td></tr>';
             return;
         }
 
-
         let html = '';
-        cart.forEach((item, index) => {
-            // Convert to numbers if they're strings
-            const quantity = parseFloat(item.quantity) || 0;
-            const unitPrice = parseFloat(item.unit_price) || 0;
-            const totalPrice = parseFloat(item.total_price) || (quantity * unitPrice);
+        for (let i = 0; i < cart.length; i++) {
+            const item = cart[i];
+
+            // Ensure all properties exist with defaults
+            const productName = item.product_name || 'Unknown';
+            const displayQty = item.display_quantity || item.quantity || 1;
+            const displayUnit = item.display_unit || item.base_unit || 'Piece';
+            const baseUnit = item.base_unit || 'Piece';
+            const totalPrice = item.total_price || 0;
+            const unitPrice = totalPrice / displayQty;
+            const tierInfo = item.tier_info || '';
+            const productId = item.product_id || 0;
+
+            let packageOptions = `<option value="${baseUnit}" data-multiplier="1">${baseUnit}</option>`;
+
+            if (productId > 0) {
+                try {
+                    const response = await fetch(`api/get_product_packages.php?product_id=${productId}`);
+                    const text = await response.text();
+                    if (!text.startsWith('<')) {
+                        const packages = JSON.parse(text);
+                        packages.forEach(pkg => {
+                            const selected = (displayUnit === pkg.package_name) ? 'selected' : '';
+                            packageOptions += `<option value="${pkg.package_name}" data-multiplier="${pkg.multiplier}" ${selected}>${pkg.package_name}</option>`;
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to load packages:', e);
+                }
+            }
 
             html += `
             <tr>
+                <td><strong>${productName}</strong><br><small>${tierInfo}</small></td>
+                <td><input type="number" class="form-control form-control-sm" value="${displayQty}" step="1" min="0" onchange="updateCartItemQuantity(${i}, this.value)"></td>
                 <td>
-                    <strong>${item.product_name}</strong><br>
-                    <small class="text-muted">${item.tier_info || ''}</small>
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" 
-                           value="${quantity}" step="1" min="0"
-                           onchange="updateCartItemQuantity(${index}, this.value)">
+                    <select class="form-select form-select-sm" onchange="changeItemPackage(${i}, this.value, this.options[this.selectedIndex].dataset.multiplier)">
+                        ${packageOptions}
+                    </select>
                 </td>
                 <td class="text-end">Rs. ${unitPrice.toFixed(2)}</td>
                 <td class="text-end">Rs. ${totalPrice.toFixed(2)}</td>
-                <td>
-                    <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </td>
+                <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})"><i class="bi bi-x"></i></button></td>
             </tr>
         `;
-        });
-
+        }
         tbody.innerHTML = html;
-        document.getElementById('amount_received').value = '0';
-        document.getElementById('payment_status').style.display = 'none';
     }
-    // Clean cart data - convert string prices to numbers
+
+    async function changeItemPackage(index, packageName, multiplier) {
+        const item = cart[index];
+        if (!item) return;
+
+        const newMultiplier = parseFloat(multiplier) || 1;
+        const displayQty = item.display_quantity || item.quantity || 1;
+        const newActualQty = displayQty * newMultiplier;
+        const maxStock = item.max_stock || 999999;
+        const baseUnit = item.base_unit || 'Piece';
+
+        if (newActualQty > maxStock) {
+            alert(`Only ${maxStock} ${baseUnit} available!`);
+            renderCart();
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('product_id', item.product_id);
+        formData.append('quantity', newActualQty);
+        formData.append('customer_type', customerType);
+
+        try {
+            const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+            const priceData = await response.json();
+
+            item.display_unit = packageName;
+            item.actual_quantity = newActualQty;
+            item.unit_price = priceData.unit_price || 0;
+            item.total_price = priceData.total_price || 0;
+            item.tier_info = priceData.tier_info || '';
+
+            renderCart();
+            updateTotal();
+        } catch (error) {
+            console.error('Change package error:', error);
+        }
+    }
+
+    async function updateCartItemQuantity(index, newDisplayQty) {
+        if (newDisplayQty <= 0) {
+            removeFromCart(index);
+            return;
+        }
+
+        const item = cart[index];
+        if (!item) return;
+
+        const oldDisplayQty = item.display_quantity || item.quantity || 1;
+        const oldActualQty = item.actual_quantity || oldDisplayQty;
+        const ratio = oldActualQty / oldDisplayQty;
+        const newActualQty = newDisplayQty * ratio;
+        const maxStock = item.max_stock || 999999;
+        const baseUnit = item.base_unit || 'Piece';
+
+        if (newActualQty > maxStock) {
+            alert(`Only ${maxStock} ${baseUnit} available!`);
+            renderCart();
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('product_id', item.product_id);
+        formData.append('quantity', newActualQty);
+        formData.append('customer_type', customerType);
+
+        try {
+            const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+            const priceData = await response.json();
+
+            item.actual_quantity = newActualQty;
+            item.display_quantity = parseFloat(newDisplayQty);
+            item.unit_price = priceData.unit_price || 0;
+            item.total_price = priceData.total_price || 0;
+            item.tier_info = priceData.tier_info || '';
+
+            renderCart();
+            updateTotal();
+        } catch (error) {
+            console.error('Update quantity error:', error);
+        }
+    }
+
+    // function removeFromCart(index) {
+    //     cart.splice(index, 1);
+    //     renderCart();
+    //     updateTotal();
+    // }
+
+    // function updateTotal() {
+    //     const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
+    //     document.getElementById('subtotal').textContent = `Rs. ${subtotal.toFixed(2)}`;
+    //     document.getElementById('grand_total').textContent = `Rs. ${subtotal.toFixed(2)}`;
+    // }
     function cleanCartData(items) {
         return items.map(item => ({
             product_id: parseInt(item.product_id) || 0,
@@ -734,16 +1091,7 @@ if ($edit_mode > 0) {
             unit: item.unit || 'piece'
         }));
     }
-    async function updateCartItemQuantity(index, newQty) {
-        if (newQty <= 0) {
-            removeFromCart(index);
-            return;
-        }
 
-        await updateItemPrice(index, parseFloat(newQty));
-        renderCart();
-        updateTotal();
-    }
 
     function removeFromCart(index) {
         cart.splice(index, 1);
@@ -775,7 +1123,7 @@ if ($edit_mode > 0) {
             return;
         }
 
-        const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
+        const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
         const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
         const discountType = document.getElementById('discount_type').value;
 
@@ -796,7 +1144,16 @@ if ($edit_mode > 0) {
             discount: discount,
             total: total,
             payment_method: document.getElementById('payment_method').value,
-            items: cart
+            items: cart.map(item => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                quantity: item.actual_quantity || item.quantity || 0,
+                unit_price: item.unit_price || 0,
+                total_price: item.total_price || 0,
+                tier_info: item.tier_info || '',
+                display_unit: item.display_unit || item.base_unit,
+                display_quantity: item.display_quantity || item.quantity
+            }))
         };
 
         const response = await fetch('api/save_invoice.php', {
@@ -808,10 +1165,8 @@ if ($edit_mode > 0) {
         const result = await response.json();
 
         if (result.success) {
-            // Open print window
             window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
 
-            // Clear cart for new sale
             cart = [];
             renderCart();
             updateTotal();
@@ -819,7 +1174,7 @@ if ($edit_mode > 0) {
             document.getElementById('customer_phone').value = '';
             document.getElementById('discount_input').value = '0';
 
-            alert(`Invoice ${result.invoice_no} completed successfully!`);
+            showNotification('success', `Invoice ${result.invoice_no} completed!`);
         } else {
             alert('Error: ' + result.error);
         }
@@ -856,46 +1211,23 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Call this in updateCustomerType()
-    async function updateCustomerType() {
-        customerType = document.getElementById('customer_type').value;
+    // // Call this in updateCustomerType()
+    // function updateCustomerType() {
+    //     customerType = document.getElementById('customer_type').value;
+    //     const note = document.getElementById('pricing_note');
 
-        // Show notification
-        updatePricingNote();
-
-        // Recalculate all items in cart with new customer type
-        if (cart.length > 0) {
-            const currentItems = [...cart];
-            cart = [];
-
-            for (const item of currentItems) {
-                await addToCartWithQuantity(
-                    item.product_id,
-                    item.product_name,
-                    item.unit,
-                    item.max_stock || 999999,
-                    item.quantity
-                );
-            }
-        }
-
-        renderCart();
-        updateTotal();
-    }
-    // // Keyboard shortcuts
-    // document.addEventListener('keydown', function (e) {
-    //     if (e.key === 'F12') {
-    //         e.preventDefault();
-    //         completeSale();
-    //     } else if (e.key === 'Escape') {
-    //         clearSearch();
-    //     } else if (e.key === '/' && !e.target.matches('input')) {
-    //         e.preventDefault();
-    //         document.getElementById('search_product').focus();
+    //     if (customerType === 'wholesale') {
+    //         note.innerHTML = '📦 Wholesale pricing applied';
+    //         note.className = 'text-primary';
+    //     } else {
+    //         note.innerHTML = '🛒 Retail pricing applied';
+    //         note.className = 'text-success';
     //     }
-    // });
 
-    // Load quick products - Popular items first, fallback to first 10
+    //     if (cart.length > 0) {
+    //         recalculateCartPrices();
+    //     }
+    // }
     async function loadQuickProducts() {
         try {
             const response = await fetch('api/search_product.php?mode=popular');
@@ -1181,10 +1513,10 @@ if ($edit_mode > 0) {
 
     // Also track when items are added
     const originalAddToCart = addToCart;
-    addToCart = async function (productId, productName, unit, maxStock) {
-        await originalAddToCart(productId, productName, unit, maxStock);
-        hasUnsavedChanges = true;
-    };
+    // addToCart = async function (productId, productName, unit, maxStock) {
+    //     await originalAddToCart(productId, productName, unit, maxStock);
+    //     hasUnsavedChanges = true;
+    // };
 
     // Track when items are removed
     const originalRemoveFromCart = removeFromCart;
@@ -1265,37 +1597,74 @@ if ($edit_mode > 0) {
     }
 
 
-   function selectProductFromSearch(product) {
-    if (!product) return;
-    
-    const quantity = prompt(`Enter quantity for ${product.name} (${product.unit}):`, '1');
-    if (!quantity || quantity <= 0) return;
-    if (parseFloat(quantity) > product.current_stock) {
-        alert(`Only ${product.current_stock} ${product.unit} available in stock!`);
-        return;
+    // Select product from search
+    async function selectProductFromSearch(product) {
+        if (!product) return;
+
+        // Fetch packages for this product
+        try {
+            const response = await fetch(`api/get_product_packages.php?product_id=${product.id}`);
+            const packages = await response.json();
+
+            let promptMessage = `Enter quantity for ${product.name} (${product.unit}):`;
+
+            if (packages.length > 0) {
+                promptMessage += '\n\nQuick Packages:\n';
+                packages.forEach(pkg => {
+                    promptMessage += `  • ${pkg.package_name} = ${pkg.multiplier} ${product.unit}\n`;
+                });
+                promptMessage += '\nYou can enter any number or use package values.';
+            }
+
+            const quantity = prompt(promptMessage, '1');
+            if (!quantity || quantity <= 0) return;
+
+            if (parseFloat(quantity) > product.current_stock) {
+                alert(`Only ${product.current_stock} ${product.unit} available in stock!`);
+                return;
+            }
+
+            await addToCartWithQuantity(
+                product.id,
+                product.name,
+                product.unit,
+                product.current_stock,
+                parseFloat(quantity)
+            );
+
+            renderCart();
+            updateTotal();
+
+            // Clear search
+            document.getElementById('search_product').value = '';
+            document.getElementById('search_results').innerHTML = '';
+            searchResults = [];
+            selectedResultIndex = -1;
+
+            document.getElementById('search_product').focus();
+
+        } catch (error) {
+            // Fallback to simple prompt
+            const quantity = prompt(`Enter quantity for ${product.name} (${product.unit}):`, '1');
+            if (!quantity || quantity <= 0) return;
+
+            await addToCartWithQuantity(
+                product.id,
+                product.name,
+                product.unit,
+                product.current_stock,
+                parseFloat(quantity)
+            );
+
+            renderCart();
+            updateTotal();
+            document.getElementById('search_product').value = '';
+            document.getElementById('search_results').innerHTML = '';
+            searchResults = [];
+            selectedResultIndex = -1;
+            document.getElementById('search_product').focus();
+        }
     }
-
-    addToCartWithQuantity(
-        product.id, 
-        product.name, 
-        product.unit, 
-        product.current_stock, 
-        parseFloat(quantity)
-    ).then(() => {
-        renderCart();
-        updateTotal();
-        
-        // Clear search
-        document.getElementById('search_product').value = '';
-        document.getElementById('search_results').innerHTML = '';
-        searchResults = [];
-        selectedResultIndex = -1;
-        
-        // Focus back on search
-        document.getElementById('search_product').focus();
-    });
-}
-
     function clearSearch() {
         document.getElementById('search_product').value = '';
         document.getElementById('search_results').innerHTML = '';

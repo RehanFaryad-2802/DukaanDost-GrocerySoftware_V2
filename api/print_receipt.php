@@ -187,6 +187,11 @@ while ($row = $stmt->fetch()) {
 </head>
 
 <body onload="window.print();">
+    <?php if (!empty($invoice['customer_name'])): ?>
+            <h1 class="text-center" style="font-size: 35px;">
+                <?php echo htmlspecialchars($invoice['customer_name']); ?>
+            </h1>
+    <?php endif; ?>
     <div class="header">
         <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
         <p><?php echo $settings['store_address'] ?? ''; ?></p>
@@ -231,22 +236,30 @@ while ($row = $stmt->fetch()) {
             foreach ($items as $item):
                 $total_items += $item['quantity'];
 
-                // Get product unit
-                $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
-                $stmt->execute([$item['product_id']]);
-                $product = $stmt->fetch();
-                $unit = $product ? $product['unit'] : 'piece';
+                // First try to get display_unit from invoice_items
+                $displayUnit = $item['display_unit'] ?? null;
+                $displayQty = $item['display_quantity'] ?? null;
+
+                // If not saved, fallback to product's base unit
+                if (!$displayUnit) {
+                    $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
+                    $stmt->execute([$item['product_id']]);
+                    $product = $stmt->fetch();
+                    $displayUnit = $product ? $product['unit'] : 'piece';
+                }
+
+                // Use display quantity if available, otherwise use actual quantity
+                $qty = (float) ($displayQty ?? $item['quantity']);
                 ?>
                 <tr>
                     <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
                     <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="" dir="rtl">
                         <?php
-                        $qty = (float) $item['quantity'];
                         if (floor($qty) == $qty) {
-                            echo $qty . ' ' . $unit;
+                            echo $qty . ' ' . $displayUnit;
                         } else {
-                            echo rtrim(rtrim($qty, '0'), '.') . ' ' . $unit;
+                            echo rtrim(rtrim((string) $qty, '0'), '.') . ' ' . $displayUnit;
                         }
                         ?>
                     </td>

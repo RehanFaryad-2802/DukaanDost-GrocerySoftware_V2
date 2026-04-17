@@ -3,7 +3,7 @@ require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 require_once 'config/functions.php';
 
-// Handle Add Product - SIMPLE VERSION
+// Handle Add Product
 if (isset($_POST['add_product'])) {
     $code = trim($_POST['code']);
     $name = trim($_POST['name']);
@@ -32,6 +32,24 @@ if (isset($_POST['add_product'])) {
         ");
         $stmt->execute([$code, $name, $description, $category, $unit, $stock, $min_alert, $cost]);
         $product_id = $pdo->lastInsertId();
+
+        // ========== ADD PACKAGE SAVING CODE HERE ==========
+        // Save packages if any
+        if (isset($_POST['package_name']) && is_array($_POST['package_name'])) {
+            $package_names = $_POST['package_name'];
+            $package_multipliers = $_POST['package_multiplier'];
+
+            for ($i = 0; $i < count($package_names); $i++) {
+                if (!empty($package_names[$i]) && !empty($package_multipliers[$i])) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO product_packages (product_id, package_name, multiplier)
+                        VALUES (?, ?, ?)
+                    ");
+                    $stmt->execute([$product_id, $package_names[$i], $package_multipliers[$i]]);
+                }
+            }
+        }
+        // ========== END PACKAGE SAVING CODE ==========
 
         $pdo->commit();
         $success = "Product '$name' added successfully!";
@@ -338,6 +356,11 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                                             onclick="managePricing(<?php echo $product['id']; ?>)">
                                             <i class="bi bi-tag"></i>
                                         </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="managePackages(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name'], ENT_QUOTES); ?>')"
+                                            title="Packages">
+                                            <i class="bi bi-boxes"></i>
+                                        </button>
                                         <a href="products.php?delete=<?php echo $product['id']; ?>"
                                             class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
                                             <i class="bi bi-trash"></i>
@@ -383,23 +406,6 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
     </div>
 </div>
 <script>
-    // Generate unique product code
-    function generateProductCode() {
-        const timestamp = Date.now().toString().slice(-8);
-        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        const code = `PRD${timestamp}${random}`;
-        document.getElementById('productCodeInput').value = code;
-    }
-
-    // Generate for edit modal
-    function generateCodeForEdit() {
-        const timestamp = Date.now().toString().slice(-8);
-        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        const code = `PRD${timestamp}${random}`;
-        document.querySelector('#editProductModal input[name="code"]').value = code;
-    }
-
-    // Fetch units and open modal
     async function openAddProductModal() {
         const container = document.getElementById('addProductModalContainer');
 
@@ -458,6 +464,20 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                                 </select>
                             </div>
                             <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-boxes"></i> Quick Packages (Optional)
+                                </label>
+                                <div id="packagesContainer">
+                                    <!-- Packages added here -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addPackageRow()">
+                                    <i class="bi bi-plus-circle"></i> Add Package
+                                </button>
+                                <small class="text-muted d-block mt-1">
+                                    e.g., Dozen = 12, Tray = 30, Box = 50
+                                </small>
+                            </div>
+                            <div class="mb-3">
                                 <label>Description</label>
                                 <input type="text" name="description" class="form-control">
                             </div>
@@ -488,6 +508,24 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
 
         new bootstrap.Modal(document.getElementById('addProductModal')).show();
     }
+    // Generate unique product code
+    function generateProductCode() {
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const code = `PRD${timestamp}${random}`;
+        document.getElementById('productCodeInput').value = code;
+    }
+
+    // Generate for edit modal
+    function generateCodeForEdit() {
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const code = `PRD${timestamp}${random}`;
+        document.querySelector('#editProductModal input[name="code"]').value = code;
+    }
+
+    // Fetch units and open modal
+    
 
     function getCategorySelectOptions(selectedCategory = '') {
         const categories = <?php
@@ -520,21 +558,21 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         }
     }
 
- let currentProductId = 0;
+    let currentProductId = 0;
 
-function managePricing(productId) {
-    currentProductId = productId;
-    
-    fetch(`api/get_pricing.php?product_id=${productId}`)
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('pricingModalBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('pricingModal')).show();
-        })
-        .catch(error => {
-            showNotification('error', 'Failed to load pricing tiers');
-        });
-}
+    function managePricing(productId) {
+        currentProductId = productId;
+
+        fetch(`api/get_pricing.php?product_id=${productId}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('pricingModalBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('pricingModal')).show();
+            })
+            .catch(error => {
+                showNotification('error', 'Failed to load pricing tiers');
+            });
+    }
 
     // Edit tier - open modal with data
     function editTier(tierId) {
@@ -957,6 +995,180 @@ function managePricing(productId) {
                 }
             });
     }
+    // ===============================================
+    // PACKAGE MANAGEMENT FUNCTIONS
+    // ===============================================
+
+    let packageCount = 0;
+
+    let currentUnitProductId = 0;
+
+
+async function addPackageRow() {
+    packageCount++;
+    const container = document.getElementById('packagesContainer');
+    if (!container) return;
+    
+    // Fetch units for dropdown
+    let unitsHtml = '';
+    try {
+        const response = await fetch('api/get_units.php');
+        const units = await response.json();
+        unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+    } catch (e) {
+        unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+    }
+    
+    const row = document.createElement('div');
+    row.className = 'input-group mb-2';
+    row.id = `package_row_${packageCount}`;
+    row.innerHTML = `
+        <select name="package_name[]" class="form-select" required>
+            <option value="">Select Unit</option>
+            ${unitsHtml}
+        </select>
+        <span class="input-group-text">=</span>
+        <input type="number" name="package_multiplier[]" class="form-control" placeholder="Qty (e.g., 12)" step="1" min="1" required>
+        <button type="button" class="btn btn-outline-danger" onclick="removePackageRow(${packageCount})">
+            <i class="bi bi-x"></i>
+        </button>
+    `;
+    
+    container.appendChild(row);
+}
+
+function removePackageRow(id) {
+    const row = document.getElementById(`package_row_${id}`);
+    if (row) row.remove();
+}
+    // Manage packages for existing product
+async function managePackages(productId, productName) {
+    currentUnitProductId = productId;
+
+
+     let unitsHtml = '';
+    try {
+        const response = await fetch('api/get_units.php');
+        const units = await response.json();
+        unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+    } catch (e) {
+        unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+    }
+    
+    // Fetch existing packages
+    fetch(`api/get_product_packages.php?product_id=${productId}`)
+        .then(response => response.json())
+        .then(packages => {
+            let html = `
+                <div class="modal fade" id="managePackagesModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-boxes"></i> Manage Packages - ${productName}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Package</th>
+                                            <th>Multiplier</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="packagesList">
+            `;
+            
+            if (packages.length === 0) {
+                html += `<tr><td colspan="3" class="text-center text-muted">No packages added</td></tr>`;
+            } else {
+                packages.forEach(pkg => {
+                    html += `
+                        <tr>
+                            <td>${pkg.package_name}</td>
+                            <td>${pkg.multiplier}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deletePackage(${pkg.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            html += `
+                                </tbody>
+                            </table>
+                            <hr>
+                            <h6>Add New Package</h6>
+                            <div class="input-group mb-2">
+                                <input type="text" id="new_package_name" class="form-control" placeholder="Name (e.g., Dozen)">
+                                <span class="input-group-text">=</span>
+                                <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)">
+                                <button class="btn btn-primary" onclick="savePackage(${productId})">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('managePackagesModal');
+            if (existingModal) existingModal.remove();
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+            new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
+        });
+}
+
+// Save new package
+function savePackage(productId) {
+    const name = document.getElementById('new_package_name').value;
+    const multiplier = document.getElementById('new_package_multiplier').value;
+    
+    if (!name || !multiplier) {
+        alert('Please enter both name and multiplier');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('package_name', name);
+    formData.append('multiplier', multiplier);
+    
+    fetch('api/save_product_package.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and reopen to refresh
+            bootstrap.Modal.getInstance(document.getElementById('managePackagesModal')).hide();
+            managePackages(productId, document.querySelector('.modal-title').textContent.replace('Manage Packages - ', ''));
+        } else {
+            alert(data.error);
+        }
+    });
+}
+
+// Delete package
+function deletePackage(id) {
+    if (!confirm('Delete this package?')) return;
+    
+    fetch(`api/delete_product_package.php?id=${id}`)
+        .then(() => {
+            // Refresh modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
+            const productName = document.querySelector('.modal-title').textContent.replace('Manage Packages - ', '');
+            modal.hide();
+            managePackages(currentUnitProductId, productName);
+        });
+}
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
