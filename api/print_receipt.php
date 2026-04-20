@@ -50,10 +50,43 @@ while ($row = $stmt->fetch()) {
             size: 72mm 297mm;
             margin: 0;
         }
+        :root{
+            --size: 13px
+        }
+
+        /* arabic */
+        @font-face {
+            font-family: 'Noto Nastaliq Urdu';
+            font-style: normal;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhW4MUPbN-oZdNFcBy1-DJYsEoTq5pu3SvoMC9Y.woff2) format('woff2');
+            unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+        }
+
+        /* latin-ext */
+        @font-face {
+            font-family: 'Noto Nastaliq Urdu';
+            font-style: normal;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhW4MUPbN-oZdNFcBy1-DJYsEoTq5pu3QfoMC9Y.woff2) format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+
+        /* latin */
+        @font-face {
+            font-family: 'Noto Nastaliq Urdu';
+            font-style: normal;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhW4MUPbN-oZdNFcBy1-DJYsEoTq5pu3T_oM.woff2) format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2142, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
 
         body {
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: 11px;
             width: 72mm;
             margin: 0;
             padding: 5px;
@@ -68,15 +101,16 @@ while ($row = $stmt->fetch()) {
             margin-bottom: 5px;
         }
 
+
         .header h2 {
             margin: 0;
-            font-size: 16px;
+            font-size: var(--size);
             font-weight: bold;
         }
 
         .header p {
             margin: 2px 0;
-            font-size: 11px;
+            font-size: var(--size);
         }
 
         .divider {
@@ -99,13 +133,14 @@ while ($row = $stmt->fetch()) {
             width: 100%;
             border-collapse: collapse;
             margin: 5px 0;
+            line-height: 2.01;
         }
 
         th {
             text-align: left;
             border-bottom: 1px solid #000;
             padding: 3px 0;
-            font-size: 11px;
+            font-size: var(--size);
             text-align: right;
             column-gap: 10px;
         }
@@ -114,7 +149,7 @@ while ($row = $stmt->fetch()) {
             column-gap: 10px;
             padding: 3px 0;
             vertical-align: top;
-            font-size: 11px;
+            font-size: var(--size);
             font-weight: 900;
             text-align: right;
         }
@@ -136,14 +171,14 @@ while ($row = $stmt->fetch()) {
         }
 
         .total-row {
-            font-size: 14px;
+            font-size: var(--size);
             font-weight: bold;
         }
 
         .footer {
             text-align: center;
             margin-top: 10px;
-            font-size: 11px;
+            font-size: var(--size);
         }
 
         .item-name {
@@ -188,9 +223,14 @@ while ($row = $stmt->fetch()) {
 
 <body onload="window.print();">
     <?php if (!empty($invoice['customer_name'])): ?>
-            <h1 class="text-center" style="font-size: 35px;">
-                <?php echo htmlspecialchars($invoice['customer_name']); ?>
-            </h1>
+        <h1 class="text-center" style="font-size: 35px; margin-bottom: 10px;">
+            <?php echo htmlspecialchars($invoice['customer_name']); ?>
+        </h1>
+    <?php endif; ?>
+    <?php if (!empty($invoice['customer_phone'])): ?>
+        <div class="text-center">
+            <span><?php echo htmlspecialchars($invoice['customer_phone']); ?></span>
+        </div>
     <?php endif; ?>
     <div class="header">
         <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
