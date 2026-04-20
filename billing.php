@@ -9,22 +9,22 @@
     }
 
     /* Urdu font for product names */
-    .item-name,
+    /* .item-name,
     [dir="rtl"],
     .search-result-item strong {
         font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
         font-weight: 600;
-    }
+    } */
 
     /* For search input placeholder */
-    #search_product {
+    /* #search_product {
         font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', 'Segoe UI', sans-serif;
-    }
+    } */
 
     /* For cart items */
-    #cart_items td:first-child {
+    /* #cart_items td:first-child {
         font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
-    }
+    } */
 </style>
 <?php
 require_once 'includes/header.php';
