@@ -124,7 +124,7 @@ $customers = $stmt->fetchAll();
                     <td>
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-warning" onclick="editCustomer(<?php echo $customer['id']; ?>, '<?php echo htmlspecialchars($customer['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['phone'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['address'] ?? '', ENT_QUOTES); ?>', '<?php echo $customer['customer_type']; ?>')">
-                                🖊
+                                <i class="bi bi-pen"></i>
                             </button>
                             <?php if ($customer['id'] != 1): ?>
                             <a href="customers.php?delete=<?php echo $customer['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this customer?')">
@@ -190,7 +190,7 @@ $customers = $stmt->fetchAll();
             <form method="POST">
                 <input type="hidden" name="customer_id" id="edit_customer_id">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title">🖊 Edit Customer</h5>
+                    <h5 class="modal-title"><i class="bi bi-pen"></i> Edit Customer</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">

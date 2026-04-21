@@ -79,6 +79,7 @@ if ($edit_mode > 0) {
                     <div class="col-md-3">
                         <label>Customer Type</label>
                         <select id="customer_type" class="form-select" onchange="updateCustomerType()">
+                            <option value="">-- Select Type --</option>
                             <option value="retail">🛒 Retail</option>
                             <option value="wholesale">📦 Wholesale</option>
                         </select>
@@ -274,11 +275,22 @@ if ($edit_mode > 0) {
 <script>
     let cart = [];
     let currentUnitProductId = 0;
-    let customerType = 'retail';
+    let customerType = '';
     let searchResults = [];
     let selectedResultIndex = -1;
     let currentProductId = 0;
     let packageCount = 0;
+    function checkCustomerType() {
+        const type = document.getElementById('customer_type').value;
+        if (!type) {
+            alert('⚠️ Please select Customer Type (Retail or Wholesale) before completing the sale!');
+            document.getElementById('customer_type').focus();
+            document.getElementById('customer_type').style.border = '2px solid red';
+            return false;
+        }
+        document.getElementById('customer_type').style.border = '';
+        return true;
+    }
     async function addPackageRow() {
         packageCount++;
         const container = document.getElementById('packagesContainer');
@@ -679,6 +691,17 @@ if ($edit_mode > 0) {
         customerType = document.getElementById('customer_type').value;
         const note = document.getElementById('pricing_note');
 
+        // If no type selected, show warning and don't proceed
+        if (!customerType) {
+            note.innerHTML = '⚠️ Please select Retail or Wholesale';
+            note.className = 'text-danger';
+            document.getElementById('customer_type').style.border = '2px solid red';
+            return;
+        }
+
+        // Reset border
+        document.getElementById('customer_type').style.border = '';
+
         if (customerType === 'wholesale') {
             note.innerHTML = '📦 Wholesale pricing applied';
             note.className = 'text-primary';
@@ -894,7 +917,7 @@ if ($edit_mode > 0) {
     }
 
 
-    
+
 
     async function renderCart() {
         const tbody = document.getElementById('cart_items');
@@ -1038,17 +1061,6 @@ if ($edit_mode > 0) {
         }
     }
 
-    // function removeFromCart(index) {
-    //     cart.splice(index, 1);
-    //     renderCart();
-    //     updateTotal();
-    // }
-
-    // function updateTotal() {
-    //     const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
-    //     document.getElementById('subtotal').textContent = `Rs. ${subtotal.toFixed(2)}`;
-    //     document.getElementById('grand_total').textContent = `Rs. ${subtotal.toFixed(2)}`;
-    // }
     function cleanCartData(items) {
         return items.map(item => ({
             product_id: parseInt(item.product_id) || 0,
@@ -1087,6 +1099,7 @@ if ($edit_mode > 0) {
     }
 
     async function completeSale() {
+        if (!checkCustomerType()) return;
         if (cart.length === 0) {
             alert('Cart is empty!');
             return;
@@ -1139,8 +1152,12 @@ if ($edit_mode > 0) {
             cart = [];
             renderCart();
             updateTotal();
+            customerType = '';
+            document.getElementById('customer_type').value = '';
             document.getElementById('customer_name').value = '';
             document.getElementById('customer_phone').value = '';
+            document.getElementById('amount_received').value = '0';
+            document.getElementById('payment_status').style.display = 'none';
             document.getElementById('discount_input').value = '0';
 
             showNotification('success', `Invoice ${result.invoice_no} completed!`);
@@ -1180,23 +1197,6 @@ if ($edit_mode > 0) {
         }
     }
 
-    // // Call this in updateCustomerType()
-    // function updateCustomerType() {
-    //     customerType = document.getElementById('customer_type').value;
-    //     const note = document.getElementById('pricing_note');
-
-    //     if (customerType === 'wholesale') {
-    //         note.innerHTML = '📦 Wholesale pricing applied';
-    //         note.className = 'text-primary';
-    //     } else {
-    //         note.innerHTML = '🛒 Retail pricing applied';
-    //         note.className = 'text-success';
-    //     }
-
-    //     if (cart.length > 0) {
-    //         recalculateCartPrices();
-    //     }
-    // }
     async function loadQuickProducts() {
         try {
             const response = await fetch('api/search_product.php?mode=popular');
@@ -2019,6 +2019,9 @@ if ($edit_mode > 0) {
     // Call loadCustomers on page load
     document.addEventListener('DOMContentLoaded', function () {
         loadCustomers();
+        document.getElementById('customer_type').addEventListener('change', function () {
+            this.style.border = '';
+        });
     });
 
     // Update edit mode to use dropdown
