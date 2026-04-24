@@ -302,7 +302,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                         <th>Name</th>
                         <th>Category</th>
                         <th>Unit</th>
-                        <th>Stock</th>
+                        <th>Pricing Tiers</th>
                         <th>Cost</th>
                         <th>Retail</th>
                         <th>Wholesale</th>
@@ -567,7 +567,14 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             .then(response => response.text())
             .then(html => {
                 document.getElementById('pricingModalBody').innerHTML = html;
-                new bootstrap.Modal(document.getElementById('pricingModal')).show();
+                const pricingModal = document.getElementById('pricingModal');
+                const modal = new bootstrap.Modal(pricingModal);
+                modal.show();
+                
+                // Reload page when modal is closed
+                pricingModal.addEventListener('hidden.bs.modal', () => {
+                    location.reload();
+                }, { once: true });
             })
             .catch(error => {
                 showNotification('error', 'Failed to load pricing tiers');
@@ -605,6 +612,16 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
 
     // Create edit tier modal
     function createEditTierModal() {
+        // Remove existing modal first
+        const existingModal = document.getElementById('editTierModal');
+        if (existingModal) {
+            // Close if open
+            const instance = bootstrap.Modal.getInstance(existingModal);
+            if (instance) instance.hide();
+            // Remove from DOM
+            setTimeout(() => existingModal.remove(), 500);
+        }
+        
         const modalHtml = `
         <div class="modal fade" id="editTierModal" tabindex="-1">
             <div class="modal-dialog modal-sm">
@@ -644,6 +661,12 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         </div>
     `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Add event listener to remove modal from DOM when hidden
+        const newModal = document.getElementById('editTierModal');
+        newModal.addEventListener('hidden.bs.modal', () => {
+            newModal.remove();
+        });
     }
 
     // Save edited tier
@@ -915,6 +938,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
         // Add updated rows
         products.forEach(product => {
             const stockClass = product.current_stock <= product.min_stock_alert ? 'danger' : 'success';
+            const pricingTiers = product.pricing_tiers || 'No pricing tiers';
             const row = document.createElement('tr');
             row.innerHTML = `
             <td><input type="checkbox" name="selected_products[]" value="${product.id}" class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
@@ -922,7 +946,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             <td dir="rtl"><strong>${escapeHtml(product.name)}</strong></td>
             <td>${escapeHtml(product.category || '-')}</td>
             <td>${escapeHtml(product.unit || 'Piece')}</td>
-            <td><span class="badge bg-${stockClass}">${product.current_stock}</span></td>
+            <td><small>${escapeHtml(pricingTiers)}</small></td>
             <td>Rs. ${parseFloat(product.purchase_price || 0).toFixed(0)}</td>
             <td>Rs. ${parseFloat(product.retail_price || 0).toFixed(0)}</td>
             <td>Rs. ${parseFloat(product.wholesale_price || 0).toFixed(0)}</td>
@@ -1002,6 +1026,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
     let packageCount = 0;
 
     let currentUnitProductId = 0;
+    let currentPackageProductName = '';
 
 
 async function addPackageRow() {
@@ -1044,6 +1069,7 @@ function removePackageRow(id) {
     // Manage packages for existing product
 async function managePackages(productId, productName) {
     currentUnitProductId = productId;
+    currentPackageProductName = productName;
 
 
      let unitsHtml = '';
@@ -1118,10 +1144,20 @@ async function managePackages(productId, productName) {
             
             // Remove existing modal if any
             const existingModal = document.getElementById('managePackagesModal');
-            if (existingModal) existingModal.remove();
+            if (existingModal) {
+                const instance = bootstrap.Modal.getInstance(existingModal);
+                if (instance) instance.hide();
+                setTimeout(() => existingModal.remove(), 500);
+            }
             
             document.body.insertAdjacentHTML('beforeend', html);
-            new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
+            const newModal = document.getElementById('managePackagesModal');
+            new bootstrap.Modal(newModal).show();
+            
+            // Add event listener to remove modal from DOM when hidden
+            newModal.addEventListener('hidden.bs.modal', () => {
+                newModal.remove();
+            }, { once: true });
         });
 }
 
@@ -1148,11 +1184,21 @@ function savePackage(productId) {
     .then(data => {
         if (data.success) {
             // Close modal and reopen to refresh
-            bootstrap.Modal.getInstance(document.getElementById('managePackagesModal')).hide();
-            managePackages(productId, document.querySelector('.modal-title').textContent.replace('Manage Packages - ', ''));
+            const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
+            if (modal) {
+                modal.hide();
+                // Wait for modal to close, then reopen
+                setTimeout(() => {
+                    managePackages(productId, currentPackageProductName);
+                }, 500);
+            }
         } else {
             alert(data.error);
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save package');
     });
 }
 
@@ -1161,12 +1207,21 @@ function deletePackage(id) {
     if (!confirm('Delete this package?')) return;
     
     fetch(`api/delete_product_package.php?id=${id}`)
-        .then(() => {
+        .then(response => response.json())
+        .then(data => {
             // Refresh modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
-            const productName = document.querySelector('.modal-title').textContent.replace('Manage Packages - ', '');
-            modal.hide();
-            managePackages(currentUnitProductId, productName);
+            if (modal) {
+                modal.hide();
+                // Wait for modal to close, then reopen
+                setTimeout(() => {
+                    managePackages(currentUnitProductId, currentPackageProductName);
+                }, 500);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete package');
         });
 }
 </script>

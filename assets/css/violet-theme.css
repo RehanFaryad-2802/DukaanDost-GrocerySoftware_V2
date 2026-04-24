@@ -1,0 +1,389 @@
+/* Violet Theme Override for Grocery Billing System */
+
+:root {
+    /* Primary Violet Color Palette */
+    --bs-blue: #7d3c98;
+    --bs-purple: #7d3c98;
+    --bs-primary: #7d3c98;
+    --bs-primary-rgb: 125,60,152;
+    
+    /* Violet Shades for Hover/Active States */
+    --violet-darker: #6a3181;
+    --violet-lighter: #9d5cb8;
+    --violet-light-bg: #f3e9f8;
+}
+
+/* Override Primary Button Colors */
+.btn-primary {
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+.btn-primary:hover {
+    background-color: #6a3181;
+    border-color: #5f2975;
+}
+
+.btn-primary:focus,
+.btn-primary.focus {
+    background-color: #6a3181;
+    border-color: #5f2975;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.5);
+}
+
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary.show {
+    background-color: #5f2975;
+    border-color: #542260;
+}
+
+.btn-primary.disabled,
+.btn-primary:disabled {
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+/* Override Outline Primary Button */
+.btn-outline-primary {
+    color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+.btn-outline-primary:focus,
+.btn-outline-primary.focus {
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.5);
+}
+
+/* Override Link Colors */
+.link-primary {
+    color: #7d3c98;
+}
+
+.link-primary:hover,
+.link-primary:focus {
+    color: #5f2975;
+}
+
+/* Override Navigation Links */
+.nav-link {
+    color: #7d3c98;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+    color: #5f2975;
+}
+
+.nav-link.active {
+    color: #7d3c98;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: #7d3c98;
+}
+
+/* Override Alert Colors */
+.alert-primary {
+    color: #6a2463;
+    background-color: #f3e9f8;
+    border-color: #e0c7eb;
+}
+
+.alert-primary hr {
+    border-top-color: #d4b3e0;
+}
+
+.alert-primary .alert-link {
+    color: #511e4f;
+}
+
+/* Override Badge Colors */
+.badge.bg-primary {
+    background-color: #7d3c98 !important;
+}
+
+/* Override Badge Pill */
+.badge.rounded-pill.bg-primary {
+    background-color: #7d3c98 !important;
+}
+
+/* Override Pagination */
+.page-link {
+    color: #7d3c98;
+}
+
+.page-link:hover {
+    color: #5f2975;
+    background-color: #f3e9f8;
+    border-color: #e0c7eb;
+}
+
+.page-link:focus {
+    color: #5f2975;
+    background-color: #f3e9f8;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.25);
+}
+
+.page-item.active .page-link {
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+/* Override Form Controls Focus */
+.form-control:focus,
+.form-select:focus {
+    border-color: #d4a9e0;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.25);
+}
+
+/* Override Form Check Input */
+.form-check-input:checked {
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+}
+
+.form-check-input:checked:focus {
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.25);
+}
+
+.form-check-input:focus {
+    border-color: #d4a9e0;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.25);
+}
+
+/* Override Form Range Slider */
+.form-range::-webkit-slider-thumb {
+    background-color: #7d3c98;
+}
+
+.form-range::-moz-range-thumb {
+    background-color: #7d3c98;
+}
+
+.form-range::-webkit-slider-thumb:active {
+    background-color: #b8a0c8;
+}
+
+.form-range::-moz-range-thumb:active {
+    background-color: #b8a0c8;
+}
+
+/* Override Progress Bar */
+.progress-bar {
+    background-color: #7d3c98;
+}
+
+.progress-bar-striped {
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+}
+
+/* Override Table Primary Color */
+.table-primary {
+    --bs-table-bg: #f3e9f8;
+    --bs-table-striped-bg: #e8d4f0;
+    --bs-table-striped-color: #000;
+    --bs-table-active-bg: #ddc0e8;
+    --bs-table-active-color: #000;
+    --bs-table-hover-bg: #e2c7ee;
+    --bs-table-hover-color: #000;
+    color: #000;
+    border-color: #ddc0e8;
+}
+
+/* Override List Group Primary Color */
+.list-group-item-primary {
+    color: #6a2463;
+    background-color: #f3e9f8;
+}
+
+.list-group-item-primary.list-group-item-action:hover,
+.list-group-item-primary.list-group-item-action:focus {
+    color: #6a2463;
+    background-color: #e0c7eb;
+}
+
+.list-group-item-primary.list-group-item-action.active {
+    color: #fff;
+    background-color: #6a2463;
+    border-color: #6a2463;
+}
+
+/* Override Tab Navigation */
+.nav-tabs .nav-link {
+    color: #7d3c98;
+}
+
+.nav-tabs .nav-link.active {
+    color: #7d3c98;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+/* Override Dropdown Active Item */
+.dropdown-item.active,
+.dropdown-item:active {
+    background-color: #7d3c98;
+}
+
+/* Override Accordion Button */
+.accordion-button:not(.collapsed) {
+    color: #7d3c98;
+    background-color: #f3e9f8;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+}
+
+.accordion-button:not(.collapsed)::after {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%237d3c98'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+}
+
+.accordion-button:focus {
+    border-color: #d4a9e0;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.25);
+}
+
+/* Modal Header Background */
+.modal-header {
+    background-color: #f3e9f8;
+    border-bottom: 1px solid #e0c7eb;
+}
+
+/* Sidebar Active State */
+.sidebar .nav-link.active {
+    background-color: #7d3c98 !important;
+    color: white !important;
+}
+
+/* Card Header Background */
+.card-header {
+    background-color: #f3e9f8;
+    border-bottom: 1px solid #e0c7eb;
+}
+
+/* Breadcrumb Active Color */
+.breadcrumb-item.active {
+    color: #7d3c98;
+}
+
+/* Table Hover Effect */
+.table-hover tbody tr:hover {
+    background-color: #f3e9f8;
+}
+
+/* Search Result Selected Background */
+.search-result-item.selected {
+    background-color: #7d3c98 !important;
+    color: white !important;
+}
+
+.search-result-item.selected .badge {
+    background-color: white !important;
+    color: #7d3c98 !important;
+}
+
+.search-result-item.selected:hover {
+    background-color: #6a3181 !important;
+}
+
+/* Loading Spinner */
+.spinner {
+    border-top: 3px solid #7d3c98;
+}
+
+/* Hover Effects */
+button:hover:not(:disabled) {
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Custom Violet Background Colors */
+.bg-primary {
+    background-color: #7d3c98 !important;
+}
+
+.bg-primary-light {
+    background-color: #f3e9f8 !important;
+}
+
+/* Text Colors */
+.text-primary {
+    color: #7d3c98 !important;
+}
+
+.text-primary:hover {
+    color: #5f2975 !important;
+}
+
+/* Border Colors */
+.border-primary {
+    border-color: #7d3c98 !important;
+}
+
+/* Violet Gradient Background */
+.gradient-violet {
+    background: linear-gradient(135deg, #7d3c98 0%, #9d5cb8 100%);
+}
+
+/* Focus Outline Violet */
+:focus-visible {
+    outline-color: #7d3c98 !important;
+}
+
+/* Custom Classes for Violet Theme */
+.btn-violet {
+    background-color: #7d3c98;
+    border-color: #7d3c98;
+    color: white;
+}
+
+.btn-violet:hover {
+    background-color: #6a3181;
+    border-color: #5f2975;
+    color: white;
+}
+
+.btn-violet:focus {
+    background-color: #6a3181;
+    border-color: #5f2975;
+    color: white;
+    box-shadow: 0 0 0 0.25rem rgba(125, 60, 152, 0.5);
+}
+
+.badge-violet {
+    background-color: #7d3c98;
+    color: white;
+}
+
+.card-violet {
+    border-left: 4px solid #7d3c98;
+}
+
+.header-violet {
+    background: linear-gradient(135deg, #7d3c98 0%, #9d5cb8 100%);
+    color: white;
+}
+
+/* Sidebar Enhancements */
+.sidebar {
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link:hover:not(.active) {
+    color: #7d3c98;
+    background-color: #f3e9f8;
+}
+
+/* Dashboard Card Styling */
+.stat-card {
+    border-left: 4px solid #7d3c98;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(125, 60, 152, 0.15);
+}

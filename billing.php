@@ -34,13 +34,13 @@ $edit_mode = isset($_GET['edit']) ? intval($_GET['edit']) : 0;
 $editing_invoice = null;
 
 if ($edit_mode > 0) {
-    // Get invoice header
+
     $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
     $stmt->execute([$edit_mode]);
     $invoice_header = $stmt->fetch();
 
     if ($invoice_header) {
-        // Get invoice items
+
         $stmt = $pdo->prepare("
             SELECT product_id, product_name, quantity, unit_price, total_price, tier_info
             FROM invoice_items WHERE invoice_id = ?
@@ -365,11 +365,11 @@ if ($edit_mode > 0) {
                 managePackages(currentUnitProductId, productName);
             });
     }
-    // Manage packages for existing product
+
     async function managePackages(productId, productName) {
         currentUnitProductId = productId;
 
-        // Fetch units for dropdown
+
         let unitsHtml = '';
         try {
             const response = await fetch('api/get_units.php');
@@ -379,7 +379,7 @@ if ($edit_mode > 0) {
             unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
         }
 
-        // Fetch existing packages
+
         fetch(`api/get_product_packages.php?product_id=${productId}`)
             .then(response => response.json())
             .then(packages => {
@@ -450,9 +450,9 @@ if ($edit_mode > 0) {
                 new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
             });
     }
-    // Delete package
 
-    // Check if in edit mode
+
+
     <?php if ($editing_invoice): ?>
             (async function () {
                 console.log('Edit mode activated for invoice: <?php echo $editing_invoice['invoice_no']; ?>');
@@ -517,7 +517,7 @@ if ($edit_mode > 0) {
                 window.EDIT_MODE = true;
                 window.OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
 
-                // Override completeSale function
+
                 window.originalCompleteSale = completeSale;
                 completeSale = async function () {
                     await updateExistingInvoice(window.OLD_INVOICE_ID);
@@ -582,7 +582,7 @@ if ($edit_mode > 0) {
             showNotification('error', 'Error updating invoice');
         }
     }
-    // Calculate change/balance based on amount received
+
     function calculateChange() {
         const total = getGrandTotal();
         const received = parseFloat(document.getElementById('amount_received').value) || 0;
@@ -602,7 +602,7 @@ if ($edit_mode > 0) {
         statusDiv.style.display = 'block';
 
         if (received >= total) {
-            // Enough money - show change to return
+
             const change = received - total;
             statusDiv.className = 'alert alert-success mb-3';
             statusLabel.textContent = '💵 Change to Return:';
@@ -612,7 +612,7 @@ if ($edit_mode > 0) {
             completeBtn.disabled = false;
             completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Sale (F12)';
         } else {
-            // Not enough money - show balance due
+
             const due = total - received;
             statusDiv.className = 'alert alert-danger mb-3';
             statusLabel.textContent = '⚠️ Balance Due:';
@@ -624,13 +624,13 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Get current grand total
+
     function getGrandTotal() {
         const totalText = document.getElementById('grand_total').textContent;
         return parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
     }
 
-    // Set received amount quickly
+
     function setReceivedAmount(type, value = 0) {
         const total = getGrandTotal();
         const receivedInput = document.getElementById('amount_received');
@@ -645,13 +645,13 @@ if ($edit_mode > 0) {
         receivedInput.focus();
     }
 
-    // Update total (modified to also recalculate change)
+
     const originalUpdateTotal = updateTotal;
     updateTotal = function () {
         originalUpdateTotal();
         calculateChange();
 
-        // Also update exact button text
+
         const total = getGrandTotal();
         const exactBtn = document.querySelector('button[onclick="setReceivedAmount(\'exact\')"]');
         if (exactBtn) {
@@ -659,14 +659,14 @@ if ($edit_mode > 0) {
         }
     };
 
-    // Override completeSale to validate payment
+
     const originalCompleteSale = completeSale;
     completeSale = async function () {
         const total = getGrandTotal();
         const received = parseFloat(document.getElementById('amount_received').value) || 0;
         const paymentMethod = document.getElementById('payment_method').value;
 
-        // For non-cash payments, auto-set received = total
+
         if (paymentMethod !== 'cash') {
             document.getElementById('amount_received').value = total;
         } else if (received < total) {
@@ -678,7 +678,7 @@ if ($edit_mode > 0) {
         await originalCompleteSale();
     };
 
-    // Reset received amount when cart cleared
+
     const originalClearCart = clearCart;
     clearCart = function () {
         if (confirm('Clear all items from cart?')) {
@@ -691,7 +691,7 @@ if ($edit_mode > 0) {
         customerType = document.getElementById('customer_type').value;
         const note = document.getElementById('pricing_note');
 
-        // If no type selected, show warning and don't proceed
+
         if (!customerType) {
             note.innerHTML = '⚠️ Please select Retail or Wholesale';
             note.className = 'text-danger';
@@ -699,7 +699,7 @@ if ($edit_mode > 0) {
             return;
         }
 
-        // Reset border
+
         document.getElementById('customer_type').style.border = '';
 
         if (customerType === 'wholesale') {
@@ -723,8 +723,8 @@ if ($edit_mode > 0) {
 
             if (productId <= 0 || actualQty <= 0) continue;
 
-            // CRITICAL: Save the original base_unit from the product itself
-            // Fetch the actual product unit from database to ensure it's correct
+
+
             let correctBaseUnit = item.base_unit || 'Piece';
             try {
                 const response = await fetch(`api/get_product.php?id=${productId}`);
@@ -734,7 +734,7 @@ if ($edit_mode > 0) {
                 console.error('Failed to fetch product unit:', e);
             }
 
-            // Save display values
+
             const savedDisplayUnit = item.display_unit || correctBaseUnit;
             const savedDisplayQty = item.display_quantity || actualQty;
 
@@ -754,12 +754,12 @@ if ($edit_mode > 0) {
 
                 const priceData = JSON.parse(text);
 
-                // Update price data
+
                 item.unit_price = priceData.unit_price || 0;
                 item.total_price = priceData.total_price || 0;
                 item.tier_info = priceData.tier_info || '';
 
-                // RESTORE all unit values - DO NOT overwrite with "Piece"
+
                 item.base_unit = correctBaseUnit;
                 item.display_unit = savedDisplayUnit;
                 item.display_quantity = savedDisplayQty;
@@ -829,7 +829,7 @@ if ($edit_mode > 0) {
             console.error('Add to cart error:', error);
         }
     }
-    // const originalSearchProduct = searchProduct;
+
     async function searchProduct(query) {
         if (query.length < 2) {
             document.getElementById('search_results').innerHTML = '';
@@ -844,8 +844,8 @@ if ($edit_mode > 0) {
 
             searchResults = products;
 
-            // ONLY reset to 0 if this is a brand new search (not triggered by navigation)
-            // We'll use a flag to know if this is navigation vs typing
+
+
             if (!window.isNavigating) {
                 selectedResultIndex = products.length > 0 ? 0 : -1;
             }
@@ -865,7 +865,7 @@ if ($edit_mode > 0) {
                     <strong>${escapeHtml(product.name)}</strong>
                     <span class="badge bg-secondary">${product.code}</span>
                 </div>
-                <small>Stock: ${product.current_stock} ${product.unit}</small>
+                <small>Stock: ${product.current_stock} ${product.unit} | Price: </small>
             </a>
         `;
             });
@@ -933,7 +933,7 @@ if ($edit_mode > 0) {
         for (let i = 0; i < cart.length; i++) {
             const item = cart[i];
 
-            // Ensure all properties exist with defaults
+
             const productName = item.product_name || 'Unknown';
             const displayQty = item.display_quantity || item.quantity || 1;
             const displayUnit = item.display_unit || item.base_unit || 'Piece';
@@ -1165,10 +1165,10 @@ if ($edit_mode > 0) {
             alert('Error: ' + result.error);
         }
     }
-    // Edit invoice - redirect to billing page with invoice data
+
     function editInvoice(invoiceId) {
         if (confirm('Edit this invoice? A new version will be created.')) {
-            // Redirect directly with invoice ID
+
             window.location.href = 'billing.php?edit=' + invoiceId;
         }
     }
@@ -1180,12 +1180,6 @@ if ($edit_mode > 0) {
         }
     }
 
-    // function clearSearch() {
-    //     document.getElementById('search_product').value = '';
-    //     document.getElementById('search_results').innerHTML = '';
-    // }
-
-    // Update pricing note when type changes
     function updatePricingNote() {
         const note = document.getElementById('pricing_note');
         if (customerType === 'wholesale') {
@@ -1208,7 +1202,7 @@ if ($edit_mode > 0) {
                 html = '<div class="col-12 text-muted text-center py-3">No products available</div>';
             } else {
                 products.forEach(product => {
-                    // Show sales badge if product has sales
+
                     const salesBadge = product.sales_count > 0
                         ? `<br><small class="text-success"><i class="bi bi-star-fill"></i> ${product.sales_count} sold</small>`
                         : '';
@@ -1234,7 +1228,7 @@ if ($edit_mode > 0) {
                 '<div class="col-12 text-danger text-center py-3">Failed to load products</div>';
         }
     }
-    // Show notification toast
+
     function showNotification(type, message) {
         let container = document.getElementById('notificationContainer');
         if (!container) {
@@ -1260,7 +1254,7 @@ if ($edit_mode > 0) {
         div.textContent = text;
         return div.innerHTML;
     }
-    // Hold current invoice
+
     async function holdInvoice() {
         if (cart.length === 0) {
             showNotification('error', 'Cart is empty!');
@@ -1303,7 +1297,7 @@ if ($edit_mode > 0) {
             if (result.success) {
                 showNotification('success', `Invoice held! Ref: ${result.hold_ref}`);
 
-                // Clear cart
+
                 cart = [];
                 renderCart();
                 updateTotal();
@@ -1318,7 +1312,7 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Show held invoices modal
+
     async function showHeldInvoices() {
         try {
             const response = await fetch('api/hold_invoice.php', {
@@ -1386,7 +1380,7 @@ if ($edit_mode > 0) {
             </div>
         `;
 
-            // Remove existing modal if any
+
             const existingModal = document.getElementById('heldInvoicesModal');
             if (existingModal) existingModal.remove();
 
@@ -1398,7 +1392,7 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Resume held invoice
+
     async function resumeHeldInvoice(holdId) {
         try {
             const response = await fetch('api/hold_invoice.php', {
@@ -1412,18 +1406,18 @@ if ($edit_mode > 0) {
             if (result.success) {
                 const inv = result.invoice;
 
-                // Restore customer details
+
                 document.getElementById('customer_name').value = inv.customer_name || '';
                 document.getElementById('customer_phone').value = inv.customer_phone || '';
                 document.getElementById('customer_type').value = inv.customer_type;
                 customerType = inv.customer_type;
 
-                // Restore cart
+
                 cart = inv.cart_data;
                 renderCart();
                 updateTotal();
 
-                // Close modal
+
                 bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
 
                 showNotification('success', 'Invoice resumed!');
@@ -1431,24 +1425,24 @@ if ($edit_mode > 0) {
         } catch (error) {
             showNotification('error', 'Error resuming invoice');
         }
-    }// Handle search input - prevents arrow keys from triggering search
+    }
     function handleSearchInput(query) {
-        // Don't trigger search if we're navigating with arrow keys
+
         if (window.isNavigating) {
             return;
         }
         searchProduct(query);
     }
-    // Prevent arrow keys from changing input value during navigation
+
     document.getElementById('search_product').addEventListener('keydown', function (e) {
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            // Don't prevent default completely, just let our handler work
-            // But prevent the input cursor from moving
+
+
             e.preventDefault();
         }
     });
 
-    // Delete held invoice
+
     async function deleteHeldInvoice(holdId) {
         if (!confirm('Delete this held invoice permanently?')) return;
 
@@ -1459,7 +1453,7 @@ if ($edit_mode > 0) {
                 body: JSON.stringify({ action: 'delete', hold_id: holdId })
             });
 
-            // Close and refresh modal
+
             bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
             showHeldInvoices();
 
@@ -1470,31 +1464,31 @@ if ($edit_mode > 0) {
     }
     loadQuickProducts();
     updateTotal();
-    // Warn before leaving page with items in cart
+
     let hasUnsavedChanges = false;
 
-    // Update unsaved changes flag when cart changes
+
     const originalRenderCart2 = renderCart;
     renderCart = function () {
         originalRenderCart2();
         hasUnsavedChanges = cart.length > 0;
     };
 
-    // Also track when items are added
-    const originalAddToCart = addToCart;
-    // addToCart = async function (productId, productName, unit, maxStock) {
-    //     await originalAddToCart(productId, productName, unit, maxStock);
-    //     hasUnsavedChanges = true;
-    // };
 
-    // Track when items are removed
+    const originalAddToCart = addToCart;
+
+
+
+
+
+
     const originalRemoveFromCart = removeFromCart;
     removeFromCart = function (index) {
         originalRemoveFromCart(index);
         hasUnsavedChanges = cart.length > 0;
     };
 
-    // Track when cart is cleared
+
     const originalClearCart2 = clearCart;
     clearCart = function () {
         if (confirm('Clear all items from cart?')) {
@@ -1503,10 +1497,10 @@ if ($edit_mode > 0) {
         }
     };
 
-    // Warn before leaving page
+
     window.addEventListener('beforeunload', function (e) {
         if (hasUnsavedChanges && cart.length > 0) {
-            // Standard message (browser may show its own)
+
             const message = 'You have items in your cart. Are you sure you want to leave?';
             e.preventDefault();
             e.returnValue = message;
@@ -1514,26 +1508,26 @@ if ($edit_mode > 0) {
         }
     });
 
-    // Reset flag after successful sale
+
     const originalCompleteSale3 = completeSale;
     completeSale = async function () {
         await originalCompleteSale3();
         hasUnsavedChanges = false;
     };
 
-    // Reset flag after holding invoice
+
     const originalHoldInvoice = holdInvoice;
     holdInvoice = async function () {
         await originalHoldInvoice();
         hasUnsavedChanges = false;
     };
 
-    // Handle sidebar link clicks
+
     document.addEventListener('click', function (e) {
         const link = e.target.closest('a');
         if (link && hasUnsavedChanges && cart.length > 0) {
             const href = link.getAttribute('href');
-            // Skip logout and javascript links
+
             if (href && !href.startsWith('javascript:') && !href.startsWith('#')) {
                 if (!confirm('You have items in your cart. Leave without saving?')) {
                     e.preventDefault();
@@ -1544,7 +1538,7 @@ if ($edit_mode > 0) {
             }
         }
     });
-    // Highlight the selected result
+
     function highlightSelectedResult() {
         const items = document.querySelectorAll('.search-result-item');
         items.forEach((item, index) => {
@@ -1566,11 +1560,11 @@ if ($edit_mode > 0) {
     }
 
 
-    // Select product from search
+
     async function selectProductFromSearch(product) {
         if (!product) return;
 
-        // Fetch packages for this product
+
         try {
             const response = await fetch(`api/get_product_packages.php?product_id=${product.id}`);
             const packages = await response.json();
@@ -1604,7 +1598,7 @@ if ($edit_mode > 0) {
             renderCart();
             updateTotal();
 
-            // Clear search
+
             document.getElementById('search_product').value = '';
             document.getElementById('search_results').innerHTML = '';
             searchResults = [];
@@ -1613,7 +1607,7 @@ if ($edit_mode > 0) {
             document.getElementById('search_product').focus();
 
         } catch (error) {
-            // Fallback to simple prompt
+
             const quantity = prompt(`Enter quantity for ${product.name} (${product.unit}):`, '1');
             if (!quantity || quantity <= 0) return;
 
@@ -1645,110 +1639,110 @@ if ($edit_mode > 0) {
 
 
 
-    // document.addEventListener('keydown', function (e) {
-    //     const searchInput = document.getElementById('search_product');
-    //     const searchResultsDiv = document.getElementById('search_results');
-
-    //     // Only handle if search input is focused
-    //     if (document.activeElement !== searchInput) return;
-
-    //     // Check if we have search results
-    //     const resultItems = document.querySelectorAll('.search-result-item');
-    //     if (resultItems.length === 0) return;
-
-    //     const key = e.key;
-
-    //     if (key === 'ArrowDown') {
-    //         e.preventDefault();
-    //         e.stopPropagation();
-
-    //         // Remove selected class from current
-    //         if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
-    //             resultItems[selectedResultIndex].classList.remove('selected');
-    //         }
-
-    //         // Move to next
-    //         if (selectedResultIndex < resultItems.length - 1) {
-    //             selectedResultIndex++;
-    //         } else {
-    //             selectedResultIndex = 0; // Wrap around to first
-    //         }
-
-    //         // Add selected class to new item
-    //         if (resultItems[selectedResultIndex]) {
-    //             resultItems[selectedResultIndex].classList.add('selected');
-    //             resultItems[selectedResultIndex].scrollIntoView({ block: 'nearest' });
-    //         }
-
-    //     } else if (key === 'ArrowUp') {
-    //         e.preventDefault();
-    //         e.stopPropagation();
-
-    //         // Remove selected class from current
-    //         if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
-    //             resultItems[selectedResultIndex].classList.remove('selected');
-    //         }
-
-    //         // Move to previous
-    //         if (selectedResultIndex > 0) {
-    //             selectedResultIndex--;
-    //         } else {
-    //             selectedResultIndex = resultItems.length - 1; // Wrap around to last
-    //         }
-
-    //         // Add selected class to new item
-    //         if (resultItems[selectedResultIndex]) {
-    //             resultItems[selectedResultIndex].classList.add('selected');
-    //             resultItems[selectedResultIndex].scrollIntoView({ block: 'nearest' });
-    //         }
-
-    //     } else if (key === 'Enter') {
-    //         e.preventDefault();
-    //         e.stopPropagation();
-
-    //         if (selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
-    //             const product = searchResults[selectedResultIndex];
-    //             if (product) {
-    //                 selectProductFromSearch(product);
-    //             }
-    //         }
-    //     } else if (key === 'Escape') {
-    //         e.preventDefault();
-    //         clearSearch();
-    //     }
-    // });
-
-
-    // document.addEventListener('keydown', function (e) {
-    //     const tagName = e.target.tagName;
-    //     const isInput = tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
-    //     const modalOpen = document.querySelector('.modal.show') !== null;
-    //     const overlayOpen = document.getElementById('quantityInputOverlay') !== null;
-
-    //     // Skip if already in an input, modal open, or overlay open
-    //     if (isInput || modalOpen || overlayOpen) return;
-
-    //     // Skip modifier keys and special keys
-    //     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    //     if (e.key.length > 1) return; // Skip function keys, arrows, etc.
-
-    //     // Focus search and let the character type
-    //     const searchInput = document.getElementById('search_product');
-    //     if (searchInput) {
-    //         searchInput.focus();
-    //     }
-    // });
-
-
-    // ========== SINGLE KEYBOARD EVENT LISTENER ==========
-
-
-    // ========== SINGLE KEYBOARD EVENT LISTENER ==========
 
 
 
 
-    // ========== SINGLE KEYBOARD EVENT LISTENER ==========
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     document.addEventListener('keydown', function (e) {
         const searchInput = document.getElementById('search_product');
         const isSearchFocused = document.activeElement === searchInput;
@@ -1757,14 +1751,14 @@ if ($edit_mode > 0) {
         const isInput = tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
         const modalOpen = document.querySelector('.modal.show') !== null;
 
-        // F12 - Complete Sale
+
         if (e.key === 'F12') {
             e.preventDefault();
             completeSale();
             return;
         }
 
-        // ESCAPE - Clear search (only if search is focused)
+
         if (e.key === 'Escape') {
             if (isSearchFocused) {
                 e.preventDefault();
@@ -1773,34 +1767,34 @@ if ($edit_mode > 0) {
             return;
         }
 
-        // ===== ARROW KEYS & ENTER - Navigate search results =====
-        // Only handle if search input is focused AND we have results
+
+
         if (isSearchFocused && resultItems.length > 0) {
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Set flag to prevent search reset
+
                 window.isNavigating = true;
 
-                // Remove selected class from current
+
                 if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
                     resultItems[selectedResultIndex].classList.remove('selected');
                 }
 
-                // Move to next - don't wrap around
+
                 if (selectedResultIndex < resultItems.length - 1) {
                     selectedResultIndex++;
                 }
 
-                // Add selected class to new item
+
                 if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
                     resultItems[selectedResultIndex].classList.add('selected');
                     resultItems[selectedResultIndex].scrollIntoView({ block: 'nearest' });
                 }
 
-                // Reset flag after a short delay
+
                 setTimeout(() => { window.isNavigating = false; }, 100);
                 return;
             }
@@ -1809,26 +1803,26 @@ if ($edit_mode > 0) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Set flag to prevent search reset
+
                 window.isNavigating = true;
 
-                // Remove selected class from current
+
                 if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
                     resultItems[selectedResultIndex].classList.remove('selected');
                 }
 
-                // Move to previous - don't wrap around
+
                 if (selectedResultIndex > 0) {
                     selectedResultIndex--;
                 }
 
-                // Add selected class to new item
+
                 if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
                     resultItems[selectedResultIndex].classList.add('selected');
                     resultItems[selectedResultIndex].scrollIntoView({ block: 'nearest' });
                 }
 
-                // Reset flag after a short delay
+
                 setTimeout(() => { window.isNavigating = false; }, 100);
                 return;
             }
@@ -1847,32 +1841,32 @@ if ($edit_mode > 0) {
             }
         }
 
-        // ===== AUTO-FOCUS SEARCH WHEN TYPING =====
-        // If no input is focused, no modal open, and user presses a regular key (letter/number)
-        // Then focus the search input
+
+
+
         if (!isInput && !modalOpen) {
-            // Check if it's a regular character key (not modifier, not function key)
+
             const isRegularKey = e.key.length === 1 && !e.altKey && !e.ctrlKey && !e.metaKey;
 
-            // Also skip arrow keys, escape, etc.
+
             const isNavigationKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape', 'Tab'].includes(e.key);
 
             if (isRegularKey && !isNavigationKey) {
-                // Don't capture if we're already in search navigation mode
+
                 if (!isSearchFocused) {
                     e.preventDefault();
                     searchInput.focus();
-                    // Let the character be typed after focus
+
                     setTimeout(() => {
                         searchInput.value = e.key;
-                        // Trigger search
+
                         searchProduct(e.key);
                     }, 10);
                 }
             }
         }
     });
-    // Search customers
+
     async function searchCustomer(query) {
         if (query.length < 2) {
             document.getElementById('customer_results').innerHTML = '';
@@ -1906,7 +1900,7 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Select customer
+
     function selectCustomer(id, name, phone, type) {
         document.getElementById('customer_name').value = name;
         document.getElementById('customer_phone').value = phone;
@@ -1914,12 +1908,12 @@ if ($edit_mode > 0) {
         customerType = type;
         updatePricingNote();
 
-        // Clear search
+
         document.getElementById('customer_search').value = '';
         document.getElementById('customer_results').innerHTML = '';
         document.getElementById('customer_results').style.display = 'none';
 
-        // Update pricing if cart has items
+
         if (cart.length > 0) {
             recalculateCartPrices();
         }
@@ -1927,20 +1921,20 @@ if ($edit_mode > 0) {
         showNotification('success', `Customer: ${name} selected`);
     }
 
-    // Clear customer search
+
     function clearCustomerSearch() {
         document.getElementById('customer_search').value = '';
         document.getElementById('customer_results').innerHTML = '';
         document.getElementById('customer_results').style.display = 'none';
     }
 
-    // Update completeSale to save customer ID
+
     const originalCompleteSale4 = completeSale;
     completeSale = async function () {
-        // You can add customer_id to invoice if you add the column
+
         await originalCompleteSale4();
     };
-    // Load customers into dropdown
+
     async function loadCustomers() {
         try {
             const response = await fetch('api/get_customers.php');
@@ -1958,10 +1952,10 @@ if ($edit_mode > 0) {
         }
     }
 
-    // Handle customer selection
+
     function onCustomerSelect(customerId) {
         if (!customerId) {
-            // Walk-in selected
+
             document.getElementById('customer_name').value = '';
             document.getElementById('customer_phone').value = '';
             document.getElementById('customer_name').placeholder = 'Walk-in customer';
@@ -1972,7 +1966,7 @@ if ($edit_mode > 0) {
             return;
         }
 
-        // Get selected option
+
         const select = document.getElementById('customer_select');
         const option = select.options[select.selectedIndex];
 
@@ -1980,28 +1974,28 @@ if ($edit_mode > 0) {
         const phone = option.dataset.phone;
         const type = option.dataset.type;
 
-        // Fill fields
+
         document.getElementById('customer_name').value = name;
         document.getElementById('customer_phone').value = phone;
         document.getElementById('customer_type').value = type;
 
-        // Make readonly
+
         document.getElementById('customer_name').readOnly = true;
         document.getElementById('customer_name').style.backgroundColor = '#f8f9fa';
         document.getElementById('customer_phone').readOnly = true;
         document.getElementById('customer_phone').style.backgroundColor = '#f8f9fa';
 
-        // Update customer type
+
         customerType = type;
         updatePricingNote();
 
-        // Recalculate prices if cart has items
+
         if (cart.length > 0) {
             recalculateCartPrices();
         }
     }
 
-    // Update edit mode to select customer
+
     function setCustomerInDropdown(customerName, customerPhone) {
         const select = document.getElementById('customer_select');
         for (let i = 0; i < select.options.length; i++) {
@@ -2011,12 +2005,12 @@ if ($edit_mode > 0) {
                 return;
             }
         }
-        // If not found, set as manual entry
+
         document.getElementById('customer_name').value = customerName || '';
         document.getElementById('customer_phone').value = customerPhone || '';
     }
 
-    // Call loadCustomers on page load
+
     document.addEventListener('DOMContentLoaded', function () {
         loadCustomers();
         document.getElementById('customer_type').addEventListener('change', function () {
@@ -2024,9 +2018,9 @@ if ($edit_mode > 0) {
         });
     });
 
-    // Update edit mode to use dropdown
+
     <?php if ($editing_invoice): ?>
-    // After setting customer details, also set dropdown
+
     setTimeout(() => {
         setCustomerInDropdown('<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>', '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>');
     }, 500);

@@ -54,22 +54,48 @@ if ($mode === 'popular') {
 // Regular search mode
 if ($mode === 'search' || empty($mode)) {
     if (empty($search)) {
-        // Empty search - return first 10 products
+        // Empty search - return first 10 products with pricing tiers
         $stmt = $pdo->prepare("
-            SELECT id, code, name, unit, current_stock, purchase_price 
-            FROM products 
-            WHERE status = 'active' AND current_stock > 0
+            SELECT 
+                p.id, 
+                p.code, 
+                p.name, 
+                p.unit, 
+                p.current_stock,
+                p.min_stock_alert,
+                p.purchase_price,
+                GROUP_CONCAT(
+                    CONCAT(pt.customer_type, ': Rs.', pt.price_per_unit)
+                    SEPARATOR ' | '
+                ) as pricing_tiers
+            FROM products p
+            LEFT JOIN pricing_tiers pt ON p.id = pt.product_id
+            WHERE p.status = 'active' AND p.current_stock > 0
+            GROUP BY p.id
             ORDER BY name ASC
             LIMIT 50
         ");
         $stmt->execute();
     } else {
-        // Search by name or code
+        // Search by name or code with pricing tiers
         $stmt = $pdo->prepare("
-            SELECT id, code, name, unit, current_stock, purchase_price 
-            FROM products 
-            WHERE (name LIKE ? OR code LIKE ?) 
-            AND status = 'active' AND current_stock > 0
+            SELECT 
+                p.id, 
+                p.code, 
+                p.name, 
+                p.unit, 
+                p.current_stock,
+                p.min_stock_alert,
+                p.purchase_price,
+                GROUP_CONCAT(
+                    CONCAT(pt.customer_type, ': Rs.', pt.price_per_unit)
+                    SEPARATOR ' | '
+                ) as pricing_tiers
+            FROM products p
+            LEFT JOIN pricing_tiers pt ON p.id = pt.product_id
+            WHERE (p.name LIKE ? OR p.code LIKE ?) 
+            AND p.status = 'active' AND p.current_stock > 0
+            GROUP BY p.id
             ORDER BY name ASC
             LIMIT 50
         ");
