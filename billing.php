@@ -7,24 +7,6 @@
     .search-result-item.selected small {
         color: rgba(255, 255, 255, 0.8) !important;
     }
-
-    /* Urdu font for product names */
-    /* .item-name,
-    [dir="rtl"],
-    .search-result-item strong {
-        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
-        font-weight: 600;
-    } */
-
-    /* For search input placeholder */
-    /* #search_product {
-        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', 'Segoe UI', sans-serif;
-    } */
-
-    /* For cart items */
-    /* #cart_items td:first-child {
-        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
-    } */
 </style>
 <?php
 require_once 'includes/header.php';
@@ -115,10 +97,15 @@ if ($edit_mode > 0) {
         <div class="card mb-3">
             <div class="p-2">
                 <div class="input-group mb-3">
-                    <input dir="rtl" type="text" id="search_product" class="form-control form-control-lg"
-                        placeholder="تلاش کریں۔۔۔" oninput="handleSearchInput(this.value)" autofocus>
+                    <input dir="rtl" type="text" id="search_product" data-voice="true"
+                        class="form-control form-control-lg" placeholder="تلاش کریں۔۔۔"
+                        oninput="handleSearchInput(this.value)" autofocus>
                     <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                         <i class="bi bi-x"></i>
+                    </button>
+                    <button class="btn btn-outline-success" type="button" id="voiceBtn" onclick="toggleVoiceInput()"
+                        title="🎤 Voice Add Products (Batch)">
+                        <i class="bi bi-mic"></i>
                     </button>
                 </div>
                 <div id="search_results" class="list-group" style="max-height: 200px; overflow-y: auto;"></div>
@@ -270,6 +257,60 @@ if ($edit_mode > 0) {
 
         </div>
     </div>
+    <!-- Voice Input Modal -->
+    <div class="modal fade" id="voiceModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-mic"></i> 🎤 Voice Batch Input
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="stopVoiceInput()"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Status -->
+                    <div id="voiceStatus" class="alert alert-info text-center">
+                        <i class="bi bi-mic-fill"></i> Click <strong>Start Listening</strong> and speak all products
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="text-center mb-3">
+                        <button class="btn btn-success btn-lg" id="startListenBtn" onclick="startListening()">
+                            <i class="bi bi-mic-fill"></i> Start Listening
+                        </button>
+                        <button class="btn btn-danger btn-lg" id="stopListenBtn" onclick="stopListening()"
+                            style="display: none;">
+                            <i class="bi bi-stop-circle"></i> Stop & Process
+                        </button>
+                    </div>
+
+                    <!-- Interim Result -->
+                    <div id="interimResult" class="text-muted text-center mb-3"
+                        style="min-height: 30px; font-size: 18px;"></div>
+
+                    <!-- Review Textarea -->
+                    <div class="mb-3">
+                        <label class="fw-bold">📝 Review & Edit (one product per line):</label>
+                        <textarea id="voiceTextarea" class="form-control" rows="8" dir="rtl"
+                            placeholder="Spoken products will appear here..."
+                            style="font-size: 16px; font-family: 'Noto Nastaliq Urdu', serif;"></textarea>
+                        <small class="text-muted">
+                            Format: <code>ProductName Quantity Unit</code> (e.g., چینی 5 کلو)
+                        </small>
+                    </div>
+
+                    <!-- Processed Items Preview -->
+                    <div id="processedItems" style="max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="stopVoiceInput()">Cancel</button>
+                    <button class="btn btn-primary" onclick="processVoiceText()">
+                        <i class="bi bi-check-circle"></i> Verify & Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -280,6 +321,7 @@ if ($edit_mode > 0) {
     let selectedResultIndex = -1;
     let currentProductId = 0;
     let packageCount = 0;
+    
     function checkCustomerType() {
         const type = document.getElementById('customer_type').value;
         if (!type) {
@@ -291,167 +333,165 @@ if ($edit_mode > 0) {
         document.getElementById('customer_type').style.border = '';
         return true;
     }
-    async function addPackageRow() {
-        packageCount++;
-        const container = document.getElementById('packagesContainer');
-        if (!container) return;
+    // async function addPackageRow() {
+    //     packageCount++;
+    //     const container = document.getElementById('packagesContainer');
+    //     if (!container) return;
 
-        let unitsHtml = '';
-        try {
-            const response = await fetch('api/get_units.php');
-            const units = await response.json();
-            unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
-        } catch (e) {
-            unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
-        }
+    //     let unitsHtml = '';
+    //     try {
+    //         const response = await fetch('api/get_units.php');
+    //         const units = await response.json();
+    //         unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+    //     } catch (e) {
+    //         unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+    //     }
 
-        const row = document.createElement('div');
-        row.className = 'input-group mb-2';
-        row.id = `package_row_${packageCount}`;
-        row.innerHTML = `
-        <select name="package_name[]" class="form-select" required>
-            <option value="">Select Unit</option>
-            ${unitsHtml}
-        </select>
-        <span class="input-group-text">=</span>
-        <input type="number" name="package_multiplier[]" class="form-control" placeholder="Qty (e.g., 12)" step="1" min="1" required>
-        <button type="button" class="btn btn-outline-danger" onclick="removePackageRow(${packageCount})">
-            <i class="bi bi-x"></i>
-        </button>
-    `;
+    //     const row = document.createElement('div');
+    //     row.className = 'input-group mb-2';
+    //     row.id = `package_row_${packageCount}`;
+    //     row.innerHTML = `
+    //     <select name="package_name[]" class="form-select" required>
+    //         <option value="">Select Unit</option>
+    //         ${unitsHtml}
+    //     </select>
+    //     <span class="input-group-text">=</span>
+    //     <input type="number" name="package_multiplier[]" class="form-control" placeholder="Qty (e.g., 12)" step="1" min="1" required>
+    //     <button type="button" class="btn btn-outline-danger" onclick="removePackageRow(${packageCount})">
+    //         <i class="bi bi-x"></i>
+    //     </button>
+    // `;
 
-        container.appendChild(row);
-    }
+    //     container.appendChild(row);
+    // }
 
-    function removePackageRow(id) {
-        const row = document.getElementById(`package_row_${id}`);
-        if (row) row.remove();
-    }
+    // function removePackageRow(id) {
+    //     const row = document.getElementById(`package_row_${id}`);
+    //     if (row) row.remove();
+    // }
 
-    function savePackage(productId) {
-        const name = document.getElementById('new_package_name').value;
-        const multiplier = document.getElementById('new_package_multiplier').value;
+    // function savePackage(productId) {
+    //     const name = document.getElementById('new_package_name').value;
+    //     const multiplier = document.getElementById('new_package_multiplier').value;
 
-        if (!name || !multiplier) {
-            alert('Please select a unit and enter multiplier');
-            return;
-        }
+    //     if (!name || !multiplier) {
+    //         alert('Please select a unit and enter multiplier');
+    //         return;
+    //     }
 
-        const formData = new FormData();
-        formData.append('product_id', productId);
-        formData.append('package_name', name);
-        formData.append('multiplier', multiplier);
+    //     const formData = new FormData();
+    //     formData.append('product_id', productId);
+    //     formData.append('package_name', name);
+    //     formData.append('multiplier', multiplier);
 
-        fetch('api/save_product_package.php', { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('managePackagesModal')).hide();
-                    managePackages(productId, document.querySelector('.modal-title').textContent.replace('Manage Packages - ', ''));
-                } else {
-                    alert(data.error);
-                }
-            });
-    }
+    //     fetch('api/save_product_package.php', { method: 'POST', body: formData })
+    //         .then(response => response.json())
+    //         .then(data => {
+    //             if (data.success) {
+    //                 bootstrap.Modal.getInstance(document.getElementById('managePackagesModal')).hide();
+    //                 managePackages(productId, document.querySelector('.modal-title').textContent.replace('Manage Packages - ', ''));
+    //             } else {
+    //                 alert(data.error);
+    //             }
+    //         });
+    // }
 
-    function deletePackage(id) {
-        if (!confirm('Delete this package?')) return;
+    // function deletePackage(id) {
+    //     if (!confirm('Delete this package?')) return;
 
-        fetch(`api/delete_product_package.php?id=${id}`)
-            .then(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
-                const productName = document.querySelector('.modal-title').textContent.replace('Manage Packages - ', '');
-                modal.hide();
-                managePackages(currentUnitProductId, productName);
-            });
-    }
+    //     fetch(`api/delete_product_package.php?id=${id}`)
+    //         .then(() => {
+    //             const modal = bootstrap.Modal.getInstance(document.getElementById('managePackagesModal'));
+    //             const productName = document.querySelector('.modal-title').textContent.replace('Manage Packages - ', '');
+    //             modal.hide();
+    //             managePackages(currentUnitProductId, productName);
+    //         });
+    // }
 
-    async function managePackages(productId, productName) {
-        currentUnitProductId = productId;
-
-
-        let unitsHtml = '';
-        try {
-            const response = await fetch('api/get_units.php');
-            const units = await response.json();
-            unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
-        } catch (e) {
-            unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
-        }
+    // async function managePackages(productId, productName) {
+    //     currentUnitProductId = productId;
 
 
-        fetch(`api/get_product_packages.php?product_id=${productId}`)
-            .then(response => response.json())
-            .then(packages => {
-                let html = `
-                <div class="modal fade" id="managePackagesModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-secondary text-white">
-                                <h5 class="modal-title">
-                                    <i class="bi bi-boxes"></i> Manage Packages - ${productName}
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Package</th>
-                                            <th>Multiplier</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="packagesList">
-            `;
-
-                if (packages.length === 0) {
-                    html += `<tr><td colspan="3" class="text-center text-muted">No packages added</td></tr>`;
-                } else {
-                    packages.forEach(pkg => {
-                        html += `
-                        <tr>
-                            <td>${pkg.package_name}</td>
-                            <td>${pkg.multiplier}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" onclick="deletePackage(${pkg.id})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    });
-                }
-
-                html += `
-                                </tbody>
-                            </table>
-                            <hr>
-                            <h6>Add New Package</h6>
-                            <div class="input-group mb-2">
-                                <select id="new_package_name" class="form-select">
-                                    <option value="">Select Unit</option>
-                                    ${unitsHtml}
-                                </select>
-                                <span class="input-group-text">=</span>
-                                <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)">
-                                <button class="btn btn-primary" onclick="savePackage(${productId})">Add</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            `;
-
-                const existingModal = document.getElementById('managePackagesModal');
-                if (existingModal) existingModal.remove();
-
-                document.body.insertAdjacentHTML('beforeend', html);
-                new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
-            });
-    }
+    //     let unitsHtml = '';
+    //     try {
+    //         const response = await fetch('api/get_units.php');
+    //         const units = await response.json();
+    //         unitsHtml = units.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+    //     } catch (e) {
+    //         unitsHtml = `<option value="Dozen">Dozen</option><option value="Tray">Tray</option><option value="Box">Box</option>`;
+    //     }
 
 
+    //     fetch(`api/get_product_packages.php?product_id=${productId}`)
+    //         .then(response => response.json())
+    //         .then(packages => {
+    //             let html = `
+    //             <div class="modal fade" id="managePackagesModal" tabindex="-1">
+    //                 <div class="modal-dialog">
+    //                     <div class="modal-content">
+    //                         <div class="modal-header bg-secondary text-white">
+    //                             <h5 class="modal-title">
+    //                                 <i class="bi bi-boxes"></i> Manage Packages - ${productName}
+    //                             </h5>
+    //                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    //                         </div>
+    //                         <div class="modal-body">
+    //                             <table class="table table-sm">
+    //                                 <thead>
+    //                                     <tr>
+    //                                         <th>Package</th>
+    //                                         <th>Multiplier</th>
+    //                                         <th>Action</th>
+    //                                     </tr>
+    //                                 </thead>
+    //                                 <tbody id="packagesList">
+    //         `;
+
+    //             if (packages.length === 0) {
+    //                 html += `<tr><td colspan="3" class="text-center text-muted">No packages added</td></tr>`;
+    //             } else {
+    //                 packages.forEach(pkg => {
+    //                     html += `
+    //                     <tr>
+    //                         <td>${pkg.package_name}</td>
+    //                         <td>${pkg.multiplier}</td>
+    //                         <td>
+    //                             <button class="btn btn-sm btn-danger" onclick="deletePackage(${pkg.id})">
+    //                                 <i class="bi bi-trash"></i>
+    //                             </button>
+    //                         </td>
+    //                     </tr>
+    //                 `;
+    //                 });
+    //             }
+
+    //             html += `
+    //                             </tbody>
+    //                         </table>
+    //                         <hr>
+    //                         <h6>Add New Package</h6>
+    //                         <div class="input-group mb-2">
+    //                             <select id="new_package_name" class="form-select">
+    //                                 <option value="">Select Unit</option>
+    //                                 ${unitsHtml}
+    //                             </select>
+    //                             <span class="input-group-text">=</span>
+    //                             <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)">
+    //                             <button class="btn btn-primary" onclick="savePackage(${productId})">Add</button>
+    //                         </div>
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //         `;
+
+    //             const existingModal = document.getElementById('managePackagesModal');
+    //             if (existingModal) existingModal.remove();
+
+    //             document.body.insertAdjacentHTML('beforeend', html);
+    //             new bootstrap.Modal(document.getElementById('managePackagesModal')).show();
+    //         });
+    // }
 
     <?php if ($editing_invoice): ?>
             (async function () {
@@ -528,7 +568,6 @@ if ($edit_mode > 0) {
 
             })();
     <?php endif; ?>
-
 
     async function updateExistingInvoice(oldInvoiceId) {
         if (cart.length === 0) {
@@ -624,12 +663,10 @@ if ($edit_mode > 0) {
         }
     }
 
-
     function getGrandTotal() {
         const totalText = document.getElementById('grand_total').textContent;
         return parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
     }
-
 
     function setReceivedAmount(type, value = 0) {
         const total = getGrandTotal();
@@ -645,7 +682,6 @@ if ($edit_mode > 0) {
         receivedInput.focus();
     }
 
-
     const originalUpdateTotal = updateTotal;
     updateTotal = function () {
         originalUpdateTotal();
@@ -658,7 +694,6 @@ if ($edit_mode > 0) {
             exactBtn.textContent = `Exact (Rs. ${total.toFixed(0)})`;
         }
     };
-
 
     const originalCompleteSale = completeSale;
     completeSale = async function () {
@@ -677,7 +712,6 @@ if ($edit_mode > 0) {
 
         await originalCompleteSale();
     };
-
 
     const originalClearCart = clearCart;
     clearCart = function () {
@@ -916,106 +950,103 @@ if ($edit_mode > 0) {
         cart[index].tier_info = priceData.tier_info || `${priceData.tier_min} - ${priceData.tier_max || '∞'} ${item.unit}`;
     }
 
+    // async function renderCart() {
+    //     const tbody = document.getElementById('cart_items');
+    //     const countEl = document.getElementById('cart_item_count');
+    //     if (countEl) countEl.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+
+    //     if (cart.length === 0) {
+    //         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No items in cart.</td></tr>';
+    //         return;
+    //     }
+
+    //     let html = '';
+    //     for (let i = 0; i < cart.length; i++) {
+    //         const item = cart[i];
 
 
+    //         const productName = item.product_name || 'Unknown';
+    //         const displayQty = item.display_quantity || item.quantity || 1;
+    //         const displayUnit = item.display_unit || item.base_unit || 'Piece';
+    //         const baseUnit = item.base_unit || 'Piece';
+    //         const totalPrice = item.total_price || 0;
+    //         const unitPrice = totalPrice / displayQty;
+    //         const tierInfo = item.tier_info || '';
+    //         const productId = item.product_id || 0;
 
-    async function renderCart() {
-        const tbody = document.getElementById('cart_items');
-        const countEl = document.getElementById('cart_item_count');
-        if (countEl) countEl.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+    //         let packageOptions = `<option value="${baseUnit}" data-multiplier="1">${baseUnit}</option>`;
 
-        if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No items in cart.</td></tr>';
-            return;
-        }
+    //         if (productId > 0) {
+    //             try {
+    //                 const response = await fetch(`api/get_product_packages.php?product_id=${productId}`);
+    //                 const text = await response.text();
+    //                 if (!text.startsWith('<')) {
+    //                     const packages = JSON.parse(text);
+    //                     packages.forEach(pkg => {
+    //                         const selected = (displayUnit === pkg.package_name) ? 'selected' : '';
+    //                         packageOptions += `<option value="${pkg.package_name}" data-multiplier="${pkg.multiplier}" ${selected}>${pkg.package_name}</option>`;
+    //                     });
+    //                 }
+    //             } catch (e) {
+    //                 console.error('Failed to load packages:', e);
+    //             }
+    //         }
 
-        let html = '';
-        for (let i = 0; i < cart.length; i++) {
-            const item = cart[i];
+    //         html += `
+    //         <tr>
+    //             <td><strong>${productName}</strong><br><small>${tierInfo}</small></td>
+    //             <td><input type="number" class="form-control form-control-sm" value="${displayQty}" step="1" min="0" onchange="updateCartItemQuantity(${i}, this.value)"></td>
+    //             <td>
+    //                 <select class="form-select form-select-sm" onchange="changeItemPackage(${i}, this.value, this.options[this.selectedIndex].dataset.multiplier)">
+    //                     ${packageOptions}
+    //                 </select>
+    //             </td>
+    //             <td class="text-end">Rs. ${unitPrice.toFixed(2)}</td>
+    //             <td class="text-end">Rs. ${totalPrice.toFixed(2)}</td>
+    //             <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})"><i class="bi bi-x"></i></button></td>
+    //         </tr>
+    //     `;
+    //     }
+    //     tbody.innerHTML = html;
+    // }
 
+    // async function changeItemPackage(index, packageName, multiplier) {
+    //     const item = cart[index];
+    //     if (!item) return;
 
-            const productName = item.product_name || 'Unknown';
-            const displayQty = item.display_quantity || item.quantity || 1;
-            const displayUnit = item.display_unit || item.base_unit || 'Piece';
-            const baseUnit = item.base_unit || 'Piece';
-            const totalPrice = item.total_price || 0;
-            const unitPrice = totalPrice / displayQty;
-            const tierInfo = item.tier_info || '';
-            const productId = item.product_id || 0;
+    //     const newMultiplier = parseFloat(multiplier) || 1;
+    //     const displayQty = item.display_quantity || item.quantity || 1;
+    //     const newActualQty = displayQty * newMultiplier;
+    //     const maxStock = item.max_stock || 999999;
+    //     const baseUnit = item.base_unit || 'Piece';
 
-            let packageOptions = `<option value="${baseUnit}" data-multiplier="1">${baseUnit}</option>`;
+    //     if (newActualQty > maxStock) {
+    //         alert(`Only ${maxStock} ${baseUnit} available!`);
+    //         renderCart();
+    //         return;
+    //     }
 
-            if (productId > 0) {
-                try {
-                    const response = await fetch(`api/get_product_packages.php?product_id=${productId}`);
-                    const text = await response.text();
-                    if (!text.startsWith('<')) {
-                        const packages = JSON.parse(text);
-                        packages.forEach(pkg => {
-                            const selected = (displayUnit === pkg.package_name) ? 'selected' : '';
-                            packageOptions += `<option value="${pkg.package_name}" data-multiplier="${pkg.multiplier}" ${selected}>${pkg.package_name}</option>`;
-                        });
-                    }
-                } catch (e) {
-                    console.error('Failed to load packages:', e);
-                }
-            }
+    //     const formData = new FormData();
+    //     formData.append('product_id', item.product_id);
+    //     formData.append('quantity', newActualQty);
+    //     formData.append('customer_type', customerType);
 
-            html += `
-            <tr>
-                <td><strong>${productName}</strong><br><small>${tierInfo}</small></td>
-                <td><input type="number" class="form-control form-control-sm" value="${displayQty}" step="1" min="0" onchange="updateCartItemQuantity(${i}, this.value)"></td>
-                <td>
-                    <select class="form-select form-select-sm" onchange="changeItemPackage(${i}, this.value, this.options[this.selectedIndex].dataset.multiplier)">
-                        ${packageOptions}
-                    </select>
-                </td>
-                <td class="text-end">Rs. ${unitPrice.toFixed(2)}</td>
-                <td class="text-end">Rs. ${totalPrice.toFixed(2)}</td>
-                <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})"><i class="bi bi-x"></i></button></td>
-            </tr>
-        `;
-        }
-        tbody.innerHTML = html;
-    }
+    //     try {
+    //         const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+    //         const priceData = await response.json();
 
-    async function changeItemPackage(index, packageName, multiplier) {
-        const item = cart[index];
-        if (!item) return;
+    //         item.display_unit = packageName;
+    //         item.actual_quantity = newActualQty;
+    //         item.unit_price = priceData.unit_price || 0;
+    //         item.total_price = priceData.total_price || 0;
+    //         item.tier_info = priceData.tier_info || '';
 
-        const newMultiplier = parseFloat(multiplier) || 1;
-        const displayQty = item.display_quantity || item.quantity || 1;
-        const newActualQty = displayQty * newMultiplier;
-        const maxStock = item.max_stock || 999999;
-        const baseUnit = item.base_unit || 'Piece';
-
-        if (newActualQty > maxStock) {
-            alert(`Only ${maxStock} ${baseUnit} available!`);
-            renderCart();
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('product_id', item.product_id);
-        formData.append('quantity', newActualQty);
-        formData.append('customer_type', customerType);
-
-        try {
-            const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
-            const priceData = await response.json();
-
-            item.display_unit = packageName;
-            item.actual_quantity = newActualQty;
-            item.unit_price = priceData.unit_price || 0;
-            item.total_price = priceData.total_price || 0;
-            item.tier_info = priceData.tier_info || '';
-
-            renderCart();
-            updateTotal();
-        } catch (error) {
-            console.error('Change package error:', error);
-        }
-    }
+    //         renderCart();
+    //         updateTotal();
+    //     } catch (error) {
+    //         console.error('Change package error:', error);
+    //     }
+    // }
 
     async function updateCartItemQuantity(index, newDisplayQty) {
         if (newDisplayQty <= 0) {
@@ -1072,7 +1103,6 @@ if ($edit_mode > 0) {
             unit: item.unit || 'piece'
         }));
     }
-
 
     function removeFromCart(index) {
         cart.splice(index, 1);
@@ -1166,12 +1196,13 @@ if ($edit_mode > 0) {
         }
     }
 
-    function editInvoice(invoiceId) {
-        if (confirm('Edit this invoice? A new version will be created.')) {
+    // function editInvoice(invoiceId) {
+    //     if (confirm('Edit this invoice? A new version will be created.')) {
 
-            window.location.href = 'billing.php?edit=' + invoiceId;
-        }
-    }
+    //         window.location.href = 'billing.php?edit=' + invoiceId;
+    //     }
+    // }
+    
     function clearCart() {
         if (confirm('Clear all items from cart?')) {
             cart = [];
@@ -1248,6 +1279,7 @@ if ($edit_mode > 0) {
         container.appendChild(notification);
         setTimeout(() => notification.remove(), 5000);
     }
+    
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -1255,177 +1287,176 @@ if ($edit_mode > 0) {
         return div.innerHTML;
     }
 
-    async function holdInvoice() {
-        if (cart.length === 0) {
-            showNotification('error', 'Cart is empty!');
-            return;
-        }
+    // async function F() {
+    //     if (cart.length === 0) {
+    //         showNotification('error', 'Cart is empty!');
+    //         return;
+    //     }
 
-        const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
-        const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
-        const discountType = document.getElementById('discount_type').value;
+    //     const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
+    //     const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
+    //     const discountType = document.getElementById('discount_type').value;
 
-        let discount = 0;
-        if (discountType === 'percent') {
-            discount = subtotal * (discountInput / 100);
-        } else {
-            discount = discountInput;
-        }
+    //     let discount = 0;
+    //     if (discountType === 'percent') {
+    //         discount = subtotal * (discountInput / 100);
+    //     } else {
+    //         discount = discountInput;
+    //     }
 
-        const total = Math.max(0, subtotal - discount);
+    //     const total = Math.max(0, subtotal - discount);
 
-        const holdData = {
-            action: 'save',
-            customer_name: document.getElementById('customer_name').value,
-            customer_phone: document.getElementById('customer_phone').value,
-            customer_type: customerType,
-            cart: cart,
-            subtotal: subtotal,
-            discount: discount,
-            total: total
-        };
+    //     const holdData = {
+    //         action: 'save',
+    //         customer_name: document.getElementById('customer_name').value,
+    //         customer_phone: document.getElementById('customer_phone').value,
+    //         customer_type: customerType,
+    //         cart: cart,
+    //         subtotal: subtotal,
+    //         discount: discount,
+    //         total: total
+    //     };
 
-        try {
-            const response = await fetch('api/hold_invoice.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(holdData)
-            });
+    //     try {
+    //         const response = await fetch('api/hold_invoice.php', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify(holdData)
+    //         });
 
-            const result = await response.json();
+    //         const result = await response.json();
 
-            if (result.success) {
-                showNotification('success', `Invoice held! Ref: ${result.hold_ref}`);
-
-
-                cart = [];
-                renderCart();
-                updateTotal();
-                document.getElementById('customer_name').value = '';
-                document.getElementById('customer_phone').value = '';
-                document.getElementById('discount_input').value = '0';
-            } else {
-                showNotification('error', 'Failed to hold invoice');
-            }
-        } catch (error) {
-            showNotification('error', 'Error holding invoice');
-        }
-    }
+    //         if (result.success) {
+    //             showNotification('success', `Invoice held! Ref: ${result.hold_ref}`);
 
 
-    async function showHeldInvoices() {
-        try {
-            const response = await fetch('api/hold_invoice.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'list' })
-            });
+    //             cart = [];
+    //             renderCart();
+    //             updateTotal();
+    //             document.getElementById('customer_name').value = '';
+    //             document.getElementById('customer_phone').value = '';
+    //             document.getElementById('discount_input').value = '0';
+    //         } else {
+    //             showNotification('error', 'Failed to hold invoice');
+    //         }
+    //     } catch (error) {
+    //         showNotification('error', 'Error holding invoice');
+    //     }
+    // }
 
-            const result = await response.json();
+    // async function showHeldInvoices() {
+    //     try {
+    //         const response = await fetch('api/hold_invoice.php', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ action: 'list' })
+    //         });
 
-            if (!result.success) {
-                showNotification('error', 'Failed to load held invoices');
-                return;
-            }
+    //         const result = await response.json();
 
-            const modalHtml = `
-            <div class="modal fade" id="heldInvoicesModal" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header bg-info text-white">
-                            <h5 class="modal-title"><i class="bi bi-pause-circle"></i> Held Invoices</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            ${result.held_invoices.length === 0 ?
-                    '<p class="text-center text-muted py-4">No held invoices</p>' :
-                    `<table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Reference</th>
-                                            <th>Customer</th>
-                                            <th>Type</th>
-                                            <th>Items</th>
-                                            <th>Total</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${result.held_invoices.map(inv => {
-                        const cartData = JSON.parse(inv.cart_data);
-                        return `
-                                                <tr>
-                                                    <td><strong>${inv.hold_reference}</strong><br><small>${new Date(inv.created_at).toLocaleString()}</small></td>
-                                                    <td>${inv.customer_name || 'Walk-in'}</td>
-                                                    <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
-                                                    <td>${cartData.length} items</td>
-                                                    <td><strong>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-success" onclick="resumeHeldInvoice(${inv.id})">
-                                                            <i class="bi bi-play-circle"></i> Resume
-                                                        </button>
-                                                        <button class="btn btn-sm btn-danger" onclick="deleteHeldInvoice(${inv.id})">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            `;
-                    }).join('')}
-                                    </tbody>
-                                </table>`
-                }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+    //         if (!result.success) {
+    //             showNotification('error', 'Failed to load held invoices');
+    //             return;
+    //         }
 
-
-            const existingModal = document.getElementById('heldInvoicesModal');
-            if (existingModal) existingModal.remove();
-
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            new bootstrap.Modal(document.getElementById('heldInvoicesModal')).show();
-
-        } catch (error) {
-            showNotification('error', 'Error loading held invoices');
-        }
-    }
-
-
-    async function resumeHeldInvoice(holdId) {
-        try {
-            const response = await fetch('api/hold_invoice.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'get', hold_id: holdId })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const inv = result.invoice;
+    //         const modalHtml = `
+    //         <div class="modal fade" id="heldInvoicesModal" tabindex="-1">
+    //             <div class="modal-dialog modal-lg">
+    //                 <div class="modal-content">
+    //                     <div class="modal-header bg-info text-white">
+    //                         <h5 class="modal-title"><i class="bi bi-pause-circle"></i> Held Invoices</h5>
+    //                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    //                     </div>
+    //                     <div class="modal-body">
+    //                         ${result.held_invoices.length === 0 ?
+    //                 '<p class="text-center text-muted py-4">No held invoices</p>' :
+    //                 `<table class="table table-hover">
+    //                                 <thead>
+    //                                     <tr>
+    //                                         <th>Reference</th>
+    //                                         <th>Customer</th>
+    //                                         <th>Type</th>
+    //                                         <th>Items</th>
+    //                                         <th>Total</th>
+    //                                         <th>Actions</th>
+    //                                     </tr>
+    //                                 </thead>
+    //                                 <tbody>
+    //                                     ${result.held_invoices.map(inv => {
+    //                     const cartData = JSON.parse(inv.cart_data);
+    //                     return `
+    //                                             <tr>
+    //                                                 <td><strong>${inv.hold_reference}</strong><br><small>${new Date(inv.created_at).toLocaleString()}</small></td>
+    //                                                 <td>${inv.customer_name || 'Walk-in'}</td>
+    //                                                 <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
+    //                                                 <td>${cartData.length} items</td>
+    //                                                 <td><strong>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
+    //                                                 <td>
+    //                                                     <button class="btn btn-sm btn-success" onclick="resumeHeldInvoice(${inv.id})">
+    //                                                         <i class="bi bi-play-circle"></i> Resume
+    //                                                     </button>
+    //                                                     <button class="btn btn-sm btn-danger" onclick="deleteHeldInvoice(${inv.id})">
+    //                                                         <i class="bi bi-trash"></i>
+    //                                                     </button>
+    //                                                 </td>
+    //                                             </tr>
+    //                                         `;
+    //                 }).join('')}
+    //                                 </tbody>
+    //                             </table>`
+    //             }
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     `;
 
 
-                document.getElementById('customer_name').value = inv.customer_name || '';
-                document.getElementById('customer_phone').value = inv.customer_phone || '';
-                document.getElementById('customer_type').value = inv.customer_type;
-                customerType = inv.customer_type;
+    //         const existingModal = document.getElementById('heldInvoicesModal');
+    //         if (existingModal) existingModal.remove();
+
+    //         document.body.insertAdjacentHTML('beforeend', modalHtml);
+    //         new bootstrap.Modal(document.getElementById('heldInvoicesModal')).show();
+
+    //     } catch (error) {
+    //         showNotification('error', 'Error loading held invoices');
+    //     }
+    // }
+
+    // async function resumeHeldInvoice(holdId) {
+    //     try {
+    //         const response = await fetch('api/hold_invoice.php', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ action: 'get', hold_id: holdId })
+    //         });
+
+    //         const result = await response.json();
+
+    //         if (result.success) {
+    //             const inv = result.invoice;
 
 
-                cart = inv.cart_data;
-                renderCart();
-                updateTotal();
+    //             document.getElementById('customer_name').value = inv.customer_name || '';
+    //             document.getElementById('customer_phone').value = inv.customer_phone || '';
+    //             document.getElementById('customer_type').value = inv.customer_type;
+    //             customerType = inv.customer_type;
 
 
-                bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
+    //             cart = inv.cart_data;
+    //             renderCart();
+    //             updateTotal();
 
-                showNotification('success', 'Invoice resumed!');
-            }
-        } catch (error) {
-            showNotification('error', 'Error resuming invoice');
-        }
-    }
+
+    //             bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
+
+    //             showNotification('success', 'Invoice resumed!');
+    //         }
+    //     } catch (error) {
+    //         showNotification('error', 'Error resuming invoice');
+    //     }
+    // }
+    
     function handleSearchInput(query) {
 
         if (window.isNavigating) {
@@ -1442,44 +1473,38 @@ if ($edit_mode > 0) {
         }
     });
 
+    // async function deleteHeldInvoice(holdId) {
+    //     if (!confirm('Delete this held invoice permanently?')) return;
 
-    async function deleteHeldInvoice(holdId) {
-        if (!confirm('Delete this held invoice permanently?')) return;
-
-        try {
-            await fetch('api/hold_invoice.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', hold_id: holdId })
-            });
+    //     try {
+    //         await fetch('api/hold_invoice.php', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ action: 'delete', hold_id: holdId })
+    //         });
 
 
-            bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
-            showHeldInvoices();
+    //         bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal')).hide();
+    //         showHeldInvoices();
 
-            showNotification('success', 'Held invoice deleted!');
-        } catch (error) {
-            showNotification('error', 'Error deleting invoice');
-        }
-    }
+    //         showNotification('success', 'Held invoice deleted!');
+    //     } catch (error) {
+    //         showNotification('error', 'Error deleting invoice');
+    //     }
+    // }
+    
     loadQuickProducts();
     updateTotal();
 
     let hasUnsavedChanges = false;
 
-
-    const originalRenderCart2 = renderCart;
-    renderCart = function () {
-        originalRenderCart2();
-        hasUnsavedChanges = cart.length > 0;
-    };
-
+    // const originalRenderCart2 = renderCart;
+    // renderCart = function () {
+    //     originalRenderCart2();
+    //     hasUnsavedChanges = cart.length > 0;
+    // };
 
     const originalAddToCart = addToCart;
-
-
-
-
 
 
     const originalRemoveFromCart = removeFromCart;
@@ -1488,15 +1513,13 @@ if ($edit_mode > 0) {
         hasUnsavedChanges = cart.length > 0;
     };
 
-
-    const originalClearCart2 = clearCart;
-    clearCart = function () {
-        if (confirm('Clear all items from cart?')) {
-            originalClearCart2();
-            hasUnsavedChanges = false;
-        }
-    };
-
+    // const originalClearCart2 = clearCart;
+    // clearCart = function () {
+    //     if (confirm('Clear all items from cart?')) {
+    //         originalClearCart2();
+    //         hasUnsavedChanges = false;
+    //     }
+    // };
 
     window.addEventListener('beforeunload', function (e) {
         if (hasUnsavedChanges && cart.length > 0) {
@@ -1508,20 +1531,17 @@ if ($edit_mode > 0) {
         }
     });
 
-
     const originalCompleteSale3 = completeSale;
     completeSale = async function () {
         await originalCompleteSale3();
         hasUnsavedChanges = false;
     };
 
-
-    const originalHoldInvoice = holdInvoice;
-    holdInvoice = async function () {
-        await originalHoldInvoice();
-        hasUnsavedChanges = false;
-    };
-
+    // const originalHoldInvoice = holdInvoice;
+    // holdInvoice = async function () {
+    //     await originalHoldInvoice();
+    //     hasUnsavedChanges = false;
+    // };
 
     document.addEventListener('click', function (e) {
         const link = e.target.closest('a');
@@ -1558,8 +1578,6 @@ if ($edit_mode > 0) {
             selectProductFromSearch(product);
         }
     }
-
-
 
     async function selectProductFromSearch(product) {
         if (!product) return;
@@ -1628,6 +1646,7 @@ if ($edit_mode > 0) {
             document.getElementById('search_product').focus();
         }
     }
+    
     function clearSearch() {
         document.getElementById('search_product').value = '';
         document.getElementById('search_results').innerHTML = '';
@@ -1635,113 +1654,6 @@ if ($edit_mode > 0) {
         selectedResultIndex = -1;
         document.getElementById('search_product').focus();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     document.addEventListener('keydown', function (e) {
         const searchInput = document.getElementById('search_product');
@@ -1867,67 +1779,64 @@ if ($edit_mode > 0) {
         }
     });
 
-    async function searchCustomer(query) {
-        if (query.length < 2) {
-            document.getElementById('customer_results').innerHTML = '';
-            document.getElementById('customer_results').style.display = 'none';
-            return;
-        }
+    // async function searchCustomer(query) {
+    //     if (query.length < 2) {
+    //         document.getElementById('customer_results').innerHTML = '';
+    //         document.getElementById('customer_results').style.display = 'none';
+    //         return;
+    //     }
 
-        try {
-            const response = await fetch(`api/search_customers.php?q=${encodeURIComponent(query)}`);
-            const customers = await response.json();
+    //     try {
+    //         const response = await fetch(`api/search_customers.php?q=${encodeURIComponent(query)}`);
+    //         const customers = await response.json();
 
-            let html = '';
-            customers.forEach(customer => {
-                html += `
-                <a href="#" class="list-group-item list-group-item-action" onclick="selectCustomer(${customer.id}, '${customer.name.replace(/'/g, "\\'")}', '${customer.phone || ''}', '${customer.customer_type}'); return false;">
-                    <div class="d-flex justify-content-between">
-                        <strong>${customer.name}</strong>
-                        <span class="badge bg-${customer.customer_type === 'wholesale' ? 'success' : 'info'}">${customer.customer_type}</span>
-                    </div>
-                    ${customer.phone ? `<small>📞 ${customer.phone}</small>` : ''}
-                </a>
-            `;
-            });
+    //         let html = '';
+    //         customers.forEach(customer => {
+    //             html += `
+    //             <a href="#" class="list-group-item list-group-item-action" onclick="selectCustomer(${customer.id}, '${customer.name.replace(/'/g, "\\'")}', '${customer.phone || ''}', '${customer.customer_type}'); return false;">
+    //                 <div class="d-flex justify-content-between">
+    //                     <strong>${customer.name}</strong>
+    //                     <span class="badge bg-${customer.customer_type === 'wholesale' ? 'success' : 'info'}">${customer.customer_type}</span>
+    //                 </div>
+    //                 ${customer.phone ? `<small>📞 ${customer.phone}</small>` : ''}
+    //             </a>
+    //         `;
+    //         });
 
-            const resultsDiv = document.getElementById('customer_results');
-            resultsDiv.innerHTML = html;
-            resultsDiv.style.display = customers.length > 0 ? 'block' : 'none';
+    //         const resultsDiv = document.getElementById('customer_results');
+    //         resultsDiv.innerHTML = html;
+    //         resultsDiv.style.display = customers.length > 0 ? 'block' : 'none';
 
-        } catch (error) {
-            console.error('Customer search error:', error);
-        }
-    }
+    //     } catch (error) {
+    //         console.error('Customer search error:', error);
+    //     }
+    // }
 
-
-    function selectCustomer(id, name, phone, type) {
-        document.getElementById('customer_name').value = name;
-        document.getElementById('customer_phone').value = phone;
-        document.getElementById('customer_type').value = type;
-        customerType = type;
-        updatePricingNote();
-
-
-        document.getElementById('customer_search').value = '';
-        document.getElementById('customer_results').innerHTML = '';
-        document.getElementById('customer_results').style.display = 'none';
+    // function selectCustomer(id, name, phone, type) {
+    //     document.getElementById('customer_name').value = name;
+    //     document.getElementById('customer_phone').value = phone;
+    //     document.getElementById('customer_type').value = type;
+    //     customerType = type;
+    //     updatePricingNote();
 
 
-        if (cart.length > 0) {
-            recalculateCartPrices();
-        }
-
-        showNotification('success', `Customer: ${name} selected`);
-    }
+    //     document.getElementById('customer_search').value = '';
+    //     document.getElementById('customer_results').innerHTML = '';
+    //     document.getElementById('customer_results').style.display = 'none';
 
 
-    function clearCustomerSearch() {
-        document.getElementById('customer_search').value = '';
-        document.getElementById('customer_results').innerHTML = '';
-        document.getElementById('customer_results').style.display = 'none';
-    }
+    //     if (cart.length > 0) {
+    //         recalculateCartPrices();
+    //     }
 
+    //     showNotification('success', `Customer: ${name} selected`);
+    // }
+
+    // function clearCustomerSearch() {
+    //     document.getElementById('customer_search').value = '';
+    //     document.getElementById('customer_results').innerHTML = '';
+    //     document.getElementById('customer_results').style.display = 'none';
+    // }
 
     const originalCompleteSale4 = completeSale;
     completeSale = async function () {
@@ -1935,81 +1844,78 @@ if ($edit_mode > 0) {
         await originalCompleteSale4();
     };
 
-    async function loadCustomers() {
-        try {
-            const response = await fetch('api/get_customers.php');
-            const customers = await response.json();
+    // async function loadCustomers() {
+    //     try {
+    //         const response = await fetch('api/get_customers.php');
+    //         const customers = await response.json();
 
-            let options = '<option value="">-- Walk-in Customer --</option>';
-            customers.forEach(customer => {
-                options += `<option value="${customer.id}" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone || ''}" data-type="${customer.customer_type}">${customer.name} ${customer.phone ? '(' + customer.phone + ')' : ''}</option>`;
-            });
+    //         let options = '<option value="">-- Walk-in Customer --</option>';
+    //         customers.forEach(customer => {
+    //             options += `<option value="${customer.id}" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone || ''}" data-type="${customer.customer_type}">${customer.name} ${customer.phone ? '(' + customer.phone + ')' : ''}</option>`;
+    //         });
 
-            document.getElementById('customer_select').innerHTML = options;
+    //         document.getElementById('customer_select').innerHTML = options;
 
-        } catch (error) {
-            console.error('Error loading customers:', error);
-        }
-    }
+    //     } catch (error) {
+    //         console.error('Error loading customers:', error);
+    //     }
+    // }
 
+    // function onCustomerSelect(customerId) {
+    //     if (!customerId) {
 
-    function onCustomerSelect(customerId) {
-        if (!customerId) {
-
-            document.getElementById('customer_name').value = '';
-            document.getElementById('customer_phone').value = '';
-            document.getElementById('customer_name').placeholder = 'Walk-in customer';
-            document.getElementById('customer_name').readOnly = false;
-            document.getElementById('customer_name').style.backgroundColor = '';
-            document.getElementById('customer_phone').readOnly = false;
-            document.getElementById('customer_phone').style.backgroundColor = '';
-            return;
-        }
-
-
-        const select = document.getElementById('customer_select');
-        const option = select.options[select.selectedIndex];
-
-        const name = option.dataset.name;
-        const phone = option.dataset.phone;
-        const type = option.dataset.type;
+    //         document.getElementById('customer_name').value = '';
+    //         document.getElementById('customer_phone').value = '';
+    //         document.getElementById('customer_name').placeholder = 'Walk-in customer';
+    //         document.getElementById('customer_name').readOnly = false;
+    //         document.getElementById('customer_name').style.backgroundColor = '';
+    //         document.getElementById('customer_phone').readOnly = false;
+    //         document.getElementById('customer_phone').style.backgroundColor = '';
+    //         return;
+    //     }
 
 
-        document.getElementById('customer_name').value = name;
-        document.getElementById('customer_phone').value = phone;
-        document.getElementById('customer_type').value = type;
+    //     const select = document.getElementById('customer_select');
+    //     const option = select.options[select.selectedIndex];
+
+    //     const name = option.dataset.name;
+    //     const phone = option.dataset.phone;
+    //     const type = option.dataset.type;
 
 
-        document.getElementById('customer_name').readOnly = true;
-        document.getElementById('customer_name').style.backgroundColor = '#f8f9fa';
-        document.getElementById('customer_phone').readOnly = true;
-        document.getElementById('customer_phone').style.backgroundColor = '#f8f9fa';
+    //     document.getElementById('customer_name').value = name;
+    //     document.getElementById('customer_phone').value = phone;
+    //     document.getElementById('customer_type').value = type;
 
 
-        customerType = type;
-        updatePricingNote();
+    //     document.getElementById('customer_name').readOnly = true;
+    //     document.getElementById('customer_name').style.backgroundColor = '#f8f9fa';
+    //     document.getElementById('customer_phone').readOnly = true;
+    //     document.getElementById('customer_phone').style.backgroundColor = '#f8f9fa';
 
 
-        if (cart.length > 0) {
-            recalculateCartPrices();
-        }
-    }
+    //     customerType = type;
+    //     updatePricingNote();
 
 
-    function setCustomerInDropdown(customerName, customerPhone) {
-        const select = document.getElementById('customer_select');
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].dataset.name === customerName) {
-                select.selectedIndex = i;
-                onCustomerSelect(select.value);
-                return;
-            }
-        }
+    //     if (cart.length > 0) {
+    //         recalculateCartPrices();
+    //     }
+    // }
 
-        document.getElementById('customer_name').value = customerName || '';
-        document.getElementById('customer_phone').value = customerPhone || '';
-    }
+    // function setCustomerInDropdown(customerName, customerPhone) {
+    //     const select = document.getElementById('customer_select');
+    //     for (let i = 0; i < select.options.length; i++) {
+    //         if (select.options[i].dataset.name === customerName) {
+    //             select.selectedIndex = i;
+    //             onCustomerSelect(select.value);
+    //             return;
+    //         }
+    //     }
 
+    //     document.getElementById('customer_name').value = customerName || '';
+    //     document.getElementById('customer_phone').value = customerPhone || '';
+    // }
 
     document.addEventListener('DOMContentLoaded', function () {
         loadCustomers();
@@ -2017,7 +1923,6 @@ if ($edit_mode > 0) {
             this.style.border = '';
         });
     });
-
 
     <?php if ($editing_invoice): ?>
 
@@ -2027,5 +1932,12 @@ if ($edit_mode > 0) {
     <?php endif; ?>
 
 </script>
+
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/invoices.js"></script>
+<script src="assets/js/customer.js"></script>
+<script src="assets/js/pakages.js"></script>
+<script src="assets/js/voice.js"></script>
+<script src="assets/js/voice_input.js"></script>
 
 <?php require_once 'includes/footer.php'; ?>

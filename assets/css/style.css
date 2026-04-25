@@ -241,3 +241,82 @@ body {
 .search-result-item.selected small {
     color: rgba(255, 255, 255, 0.8) !important;
 }
+/* Voice Modal Styles */
+#voiceTextArea {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Nastaliq Urdu', monospace;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+#voiceLiveDisplay {
+    transition: all 0.3s ease;
+}
+
+#voiceBatchBtn {
+    transition: all 0.3s;
+}
+
+#voiceBatchBtn:hover {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+/* Listening animation */
+@keyframes voicePulse {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+.listening {
+    animation: voicePulse 1.5s infinite;
+}
+/* Voice button pulse animation */
+#voiceBtn {
+    position: relative;
+    transition: all 0.3s;
+}
+
+#voiceBtn:hover {
+    background-color: #28a745;
+    color: white;
+}
+
+#voiceBtn.listening {
+    background-color: #dc3545;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* Voice textarea styling */
+#voiceTextarea {
+    direction: rtl;
+    text-align: right;
+    line-height: 2;
+}
+
+#voiceTextarea:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+/* For RTL inputs, position button on left
+[dir="rtl"].voice-input,
+input[dir="rtl"] {
+    padding-right: 12px !important;
+    padding-left: 40px !important;
+}
+
+[dir="rtl"] ~ .voice-mic-btn,
+input[dir="rtl"] + .voice-mic-btn {
+    right: auto !important;
+    left: 8px !important;
+} */

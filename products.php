@@ -259,7 +259,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             </div>
             <div class="col-md-4">
                 <label>Search Product</label>
-                <input dir="rtl" type="text" name="search" class="form-control" placeholder="نام یا کوڈ۔۔۔"
+                <input dir="rtl" type="text" name="search" class="form-control voice-input" placeholder="نام یا کوڈ۔۔۔"
                     value="<?php echo htmlspecialchars($search); ?>">
             </div>
             <div class="col-md-2">
@@ -1225,5 +1225,6 @@ function deletePackage(id) {
         });
 }
 </script>
+<script src="assets/js/voice_input.js"></script>
 
 <?php require_once 'includes/footer.php'; ?>
