@@ -12,11 +12,18 @@ function isSpeechSupported() {
 }
 
 function toggleVoiceInput() {
-    if (!isSpeechSupported()) { showNotification('error', 'Voice requires Chrome/Edge!'); return; }
     const modal = new bootstrap.Modal(document.getElementById('voiceModal'));
     modal.show();
     setupVoiceModal();
-    initSpeechRecognition();
+    
+    // Try to initialize speech recognition, fallback to text mode
+    if (!isSpeechSupported()) {
+        document.getElementById('voiceStatus').innerHTML = '⚠️ Offline Mode: Type product names manually or paste text below';
+        document.getElementById('startListenBtn').style.display = 'none';
+        document.getElementById('stopListenBtn').style.display = 'none';
+    } else {
+        initSpeechRecognition();
+    }
 }
 
 function setupVoiceModal() {

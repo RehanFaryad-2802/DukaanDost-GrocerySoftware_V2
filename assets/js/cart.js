@@ -135,3 +135,12 @@ async function holdInvoice() {
     showNotification("error", "Error holding invoice");
   }
 }
+
+function removeFromCart(index) {
+  if (index >= 0 && index < cart.length) {
+    cart.splice(index, 1);
+    renderCart();
+    updateTotal();
+    hasUnsavedChanges = true;
+  }
+}
