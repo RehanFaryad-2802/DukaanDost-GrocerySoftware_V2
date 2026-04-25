@@ -42,64 +42,89 @@
             console.error('Search error:', error);
         }
     }
+async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
+    // First, get the correct price for this SPECIFIC quantity
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('quantity', quantity);
+    formData.append('customer_type', customerType);
 
-    async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
-        const formData = new FormData();
-        formData.append('product_id', productId);
-        formData.append('quantity', quantity);
-        formData.append('customer_type', customerType);
+    try {
+        const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
+        const text = await response.text();
 
-        try {
-            const response = await fetch('api/get_price.php', { method: 'POST', body: formData });
-            const text = await response.text();
+        if (text.startsWith('<')) {
+            console.error('API returned HTML');
+            return;
+        }
 
-            if (text.startsWith('<')) {
-                console.error('API returned HTML');
+        const priceData = JSON.parse(text);
+        
+        const existingIndex = cart.findIndex(item =>
+            item.product_id === productId && item.display_unit === unit
+        );
+
+        if (existingIndex >= 0) {
+            const item = cart[existingIndex];
+            const newQty = (item.actual_quantity || 0) + quantity;
+
+            if (newQty > maxStock) {
+                alert(`Only ${maxStock} ${unit} available!`);
                 return;
             }
 
-            const priceData = JSON.parse(text);
+            // Recalculate price for the NEW TOTAL quantity with correct tier
+            const formData2 = new FormData();
+            formData2.append('product_id', productId);
+            formData2.append('quantity', newQty);
+            formData2.append('customer_type', customerType);
 
-            const existingIndex = cart.findIndex(item =>
-                item.product_id === productId && item.display_unit === unit
-            );
-
-            if (existingIndex >= 0) {
-                const item = cart[existingIndex];
-                const newQty = (item.actual_quantity || 0) + quantity;
-
-                if (newQty > maxStock) {
-                    alert(`Only ${maxStock} ${unit} available!`);
-                    return;
+            try {
+                const response2 = await fetch('api/get_price.php', { method: 'POST', body: formData2 });
+                const text2 = await response2.text();
+                
+                if (!text2.startsWith('<')) {
+                    const newPriceData = JSON.parse(text2);
+                    item.actual_quantity = newQty;
+                    item.display_quantity = (item.display_quantity || 0) + quantity;
+                    item.unit_price = newPriceData.unit_price || 0;
+                    item.total_price = newPriceData.total_price || 0;
+                    item.tier_info = newPriceData.tier_info || '';
+                    
+                    console.log(`Price updated: ${newQty} ${unit} @ ${item.unit_price} = ${item.total_price}`);
                 }
-
+            } catch (e) {
+                console.error('Error recalculating price:', e);
+                // Fallback: use the existing unit price (not ideal)
                 item.actual_quantity = newQty;
                 item.display_quantity = (item.display_quantity || 0) + quantity;
-                item.total_price = priceData.total_price || 0;
                 item.unit_price = priceData.unit_price || 0;
+                item.total_price = (priceData.unit_price || 0) * newQty;
                 item.tier_info = priceData.tier_info || '';
-            } else {
-                cart.unshift({
-                    product_id: productId,
-                    product_name: productName,
-                    base_unit: unit,
-                    display_unit: unit,
-                    actual_quantity: quantity,
-                    display_quantity: quantity,
-                    unit_price: priceData.unit_price || 0,
-                    total_price: priceData.total_price || 0,
-                    tier_info: priceData.tier_info || '',
-                    max_stock: maxStock
-                });
             }
-
-            renderCart();
-            updateTotal();
-        } catch (error) {
-            console.error('Add to cart error:', error);
+        } else {
+            cart.unshift({
+                product_id: productId,
+                product_name: productName,
+                base_unit: unit,
+                display_unit: unit,
+                actual_quantity: quantity,
+                display_quantity: quantity,
+                unit_price: priceData.unit_price || 0,
+                total_price: priceData.total_price || 0,
+                tier_info: priceData.tier_info || '',
+                max_stock: maxStock,
+                package_multiplier: 1
+            });
         }
-    }
 
+        renderCart();
+        updateTotal();
+    } catch (error) {
+        console.error('Add to cart error:', error);
+        alert('Error adding product to cart');
+    }
+}
     async function addToCart(productId, productName, unit, maxStock) {
         const quantity = prompt(`Enter quantity for ${productName} (${unit}):`, '1');
         if (!quantity || quantity <= 0) return;

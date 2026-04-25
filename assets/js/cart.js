@@ -18,8 +18,8 @@ async function renderCart() {
     const displayQty = item.display_quantity || item.quantity || 1;
     const displayUnit = item.display_unit || item.base_unit || "Piece";
     const baseUnit = item.base_unit || "Piece";
-    const totalPrice = item.total_price || 0;
-    const unitPrice = totalPrice / displayQty;
+    const unitPrice = item.unit_price || 0;  // Use stored unit_price from API
+    const totalPrice = item.total_price || 0;  // Already calculated by API
     const tierInfo = item.tier_info || "";
     const productId = item.product_id || 0;
 
@@ -60,6 +60,8 @@ async function renderCart() {
   }
   tbody.innerHTML = html;
 }
+
+
 const originalClearCart2 = clearCart;
 clearCart = function () {
   if (confirm("Clear all items from cart?")) {
@@ -143,4 +145,98 @@ function removeFromCart(index) {
     updateTotal();
     hasUnsavedChanges = true;
   }
+}
+
+async function updateCartItemQuantity(index, newQty) {
+  newQty = parseFloat(newQty) || 0;
+  
+  if (index < 0 || index >= cart.length) return;
+  
+  const item = cart[index];
+  if (newQty <= 0) {
+    removeFromCart(index);
+    return;
+  }
+  
+  // Update actual quantity
+  item.actual_quantity = newQty;
+  item.display_quantity = newQty;
+  
+  // Recalculate price with new quantity
+  const formData = new FormData();
+  formData.append('product_id', item.product_id);
+  formData.append('quantity', newQty);
+  formData.append('customer_type', customerType);
+  
+  try {
+    const response = await fetch('api/get_price.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const text = await response.text();
+    if (text.startsWith('<')) return;
+    
+    const priceData = JSON.parse(text);
+    item.unit_price = priceData.unit_price || 0;
+    item.total_price = priceData.total_price || 0;
+    item.tier_info = priceData.tier_info || '';
+  } catch (error) {
+    console.error('Price calculation error:', error);
+  }
+  
+  renderCart();
+  updateTotal();
+  hasUnsavedChanges = true;
+}
+
+async function changeItemPackage(index, packageName, multiplier) {
+  if (index < 0 || index >= cart.length) return;
+  
+  const item = cart[index];
+  multiplier = parseFloat(multiplier) || 1;
+  
+  // When user changes package, we need to convert the current quantity
+  // But first, let's calculate what the actual quantity should be in the new unit
+  
+  // Get the previous multiplier (1 if base unit)
+  const prevMultiplier = item.package_multiplier || 1;
+  
+  // Convert current actual_quantity back to the original input quantity
+  const originalInputQty = item.actual_quantity / prevMultiplier;
+  
+  // Now convert to the new unit using the new multiplier
+  const newActualQty = originalInputQty * multiplier;
+  
+  item.display_unit = packageName;
+  item.display_quantity = originalInputQty; // Show what the user entered
+  item.actual_quantity = newActualQty; // Store the base unit quantity
+  item.package_multiplier = multiplier; // Remember the multiplier
+  
+  // Recalculate price with new actual quantity
+  const formData = new FormData();
+  formData.append('product_id', item.product_id);
+  formData.append('quantity', newActualQty);
+  formData.append('customer_type', customerType);
+  
+  try {
+    const response = await fetch('api/get_price.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const text = await response.text();
+    if (text.startsWith('<')) return;
+    
+    const priceData = JSON.parse(text);
+    item.unit_price = priceData.unit_price || 0;
+    item.total_price = priceData.total_price || 0;
+    item.tier_info = priceData.tier_info || '';
+  } catch (error) {
+    console.error('Price calculation error:', error);
+  }
+  
+  renderCart();
+  updateTotal();
+  hasUnsavedChanges = true;
 }

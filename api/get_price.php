@@ -13,45 +13,53 @@ try {
         exit;
     }
 
+    // Get ALL pricing tiers for this product and customer type, ordered by min_quantity DESC
     $stmt = $pdo->prepare("
         SELECT * FROM pricing_tiers 
         WHERE product_id = ? AND customer_type = ?
-        AND min_quantity <= ? AND (max_quantity >= ? OR max_quantity IS NULL)
-        ORDER BY min_quantity DESC LIMIT 1
+        ORDER BY min_quantity DESC
     ");
-    $stmt->execute([$product_id, $customer_type, $quantity, $quantity]);
-    $tier = $stmt->fetch();
+    $stmt->execute([$product_id, $customer_type]);
+    $all_tiers = $stmt->fetchAll();
 
-    if ($tier) {
-        $unit_price = floatval($tier['price_per_unit']);
-        $total = $unit_price * $quantity;
-        echo json_encode([
-            'unit_price' => $unit_price,
-            'total_price' => $total,
-            'tier_info' => "{$tier['min_quantity']} - " . ($tier['max_quantity'] ?? '∞')
-        ]);
-    } else {
-        // Fallback to any tier
+    $unit_price = 0;
+    $tier_info = '';
+    
+    // Find the appropriate tier based on quantity
+    foreach ($all_tiers as $tier) {
+        if ($quantity >= $tier['min_quantity']) {
+            // Check max_quantity condition
+            if ($tier['max_quantity'] === null || $quantity <= $tier['max_quantity']) {
+                $unit_price = floatval($tier['price_per_unit']);
+                $tier_info = "Tier: {$tier['min_quantity']} - " . ($tier['max_quantity'] ?? '∞') . " units";
+                break;
+            }
+        }
+    }
+
+    // If no tier found, try to get the lowest tier (fallback)
+    if ($unit_price == 0 && !empty($all_tiers)) {
         $stmt = $pdo->prepare("
             SELECT * FROM pricing_tiers 
             WHERE product_id = ? AND customer_type = ?
             ORDER BY min_quantity ASC LIMIT 1
         ");
         $stmt->execute([$product_id, $customer_type]);
-        $tier = $stmt->fetch();
-        
-        if ($tier) {
-            $unit_price = floatval($tier['price_per_unit']);
-            $total = $unit_price * $quantity;
-            echo json_encode([
-                'unit_price' => $unit_price,
-                'total_price' => $total,
-                'tier_info' => "{$tier['min_quantity']} - " . ($tier['max_quantity'] ?? '∞')
-            ]);
-        } else {
-            echo json_encode(['unit_price' => 0, 'total_price' => 0, 'tier_info' => '']);
+        $lowest_tier = $stmt->fetch();
+        if ($lowest_tier) {
+            $unit_price = floatval($lowest_tier['price_per_unit']);
+            $tier_info = "Tier: {$lowest_tier['min_quantity']} - " . ($lowest_tier['max_quantity'] ?? '∞') . " units (fallback)";
         }
     }
+
+    $total = $unit_price * $quantity;
+    
+    echo json_encode([
+        'unit_price' => $unit_price,
+        'total_price' => $total,
+        'tier_info' => $tier_info
+    ]);
+    
 } catch (Exception $e) {
     echo json_encode(['unit_price' => 0, 'total_price' => 0, 'tier_info' => '']);
 }

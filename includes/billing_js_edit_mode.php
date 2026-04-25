@@ -31,7 +31,8 @@
                     unit_price: parseFloat(item.unit_price) || 0,
                     total_price: parseFloat(item.total_price) || 0,
                     tier_info: item.tier_info || '',
-                    max_stock: 999999
+                    max_stock: 999999,
+                    package_multiplier: 1
                 });
             }
 

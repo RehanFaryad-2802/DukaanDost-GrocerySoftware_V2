@@ -293,4 +293,5 @@
 
     // Global variables for unsaved changes warning
     let hasUnsavedChanges = false;
+    
 </script>

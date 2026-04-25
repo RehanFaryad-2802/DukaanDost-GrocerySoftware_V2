@@ -308,15 +308,3 @@ body {
     border-color: #28a745;
     box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
-/* For RTL inputs, position button on left
-[dir="rtl"].voice-input,
-input[dir="rtl"] {
-    padding-right: 12px !important;
-    padding-left: 40px !important;
-}
-
-[dir="rtl"] ~ .voice-mic-btn,
-input[dir="rtl"] + .voice-mic-btn {
-    right: auto !important;
-    left: 8px !important;
-} */
