@@ -57,7 +57,40 @@
             completeBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Payment';
         }
     }
+    // Change package for cart item
+    async function changePackage(index, packageId) {
+        if (!packageId) return;
 
+        const item = cart[index];
+        if (!item) return;
+
+        try {
+            const response = await fetch(`api/get_product_packages.php?product_id=${item.product_id}`);
+            const packages = await response.json();
+            const selectedPackage = packages.find(p => p.id == packageId);
+
+            if (selectedPackage) {
+                const multiplier = parseFloat(selectedPackage.multiplier);
+                const packageName = selectedPackage.package_name;
+
+                // Store package info in item
+                item.package_multiplier = multiplier;
+                item.display_unit = packageName;
+                item.selected_package_id = packageId;
+
+                // Convert display quantity
+                item.display_quantity = item.actual_quantity / multiplier;
+
+                renderCart();
+                updateTotal();
+
+                showNotification('success', `Using ${packageName} (1 ${packageName} = ${multiplier} ${item.base_unit})`);
+            }
+        } catch (error) {
+            console.error('Error changing package:', error);
+            alert('Failed to change package');
+        }
+    }
     function getGrandTotal() {
         const totalText = document.getElementById('grand_total').textContent;
         return parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
@@ -293,5 +326,5 @@
 
     // Global variables for unsaved changes warning
     let hasUnsavedChanges = false;
-    
+
 </script>

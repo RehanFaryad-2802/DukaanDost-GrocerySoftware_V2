@@ -2,15 +2,15 @@
 // Voice Input - Auto-start on focus, stop on blur
 // ===============================================
 
-(function() {
+(function () {
     // Active recognition instance
     let activeRecognition = null;
     let activeInput = null;
-    
+
     // Add CSS
     function addStyles() {
         if (document.getElementById('voice-input-styles')) return;
-        
+
         const style = document.createElement('style');
         style.id = 'voice-input-styles';
         style.textContent = `
@@ -109,32 +109,32 @@
         `;
         document.head.appendChild(style);
     }
-    
+
     // Show toast notification
     function showToast(message, type = 'info') {
         const existingToast = document.querySelector('.voice-toast');
         if (existingToast) existingToast.remove();
-        
+
         const toast = document.createElement('div');
         toast.className = `voice-toast voice-toast-${type}`;
         toast.innerHTML = `<span>${message}</span>`;
         document.body.appendChild(toast);
-        
+
         setTimeout(() => {
             toast.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
-    
+
     // Stop current listening
     function stopListening() {
         if (activeRecognition) {
             try {
                 activeRecognition.abort();
-            } catch(e) {}
+            } catch (e) { }
             activeRecognition = null;
         }
-        
+
         if (activeInput) {
             activeInput.classList.remove('voice-input-listening');
             const wrapper = activeInput.closest('.voice-input-wrapper');
@@ -145,40 +145,39 @@
             activeInput = null;
         }
     }
-    
+
     // Start listening for an input
     function startListening(input, micBtn) {
         // Stop any existing listening
         stopListening();
-        
+
         // Check speech recognition support
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             showToast('Voice not supported. Use Chrome/Edge.', 'error');
             return false;
         }
-        
+
         // Set active
         activeInput = input;
         input.classList.add('voice-input-listening');
         if (micBtn) micBtn.classList.add('listening');
-        
+
         // Create recognition
         activeRecognition = new SpeechRecognition();
         activeRecognition.lang = 'ur-PK';
         activeRecognition.continuous = false;
         activeRecognition.interimResults = true;
         activeRecognition.maxAlternatives = 1;
-        
-        activeRecognition.onstart = function() {
-            showToast('بولیں۔۔۔', 'info');
+
+        activeRecognition.onstart = function () {
             input.placeholder = 'بولیں۔۔۔';
         };
-        
-        activeRecognition.onresult = function(event) {
+
+        activeRecognition.onresult = function (event) {
             let interim = '';
             let final = '';
-            
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
@@ -187,28 +186,27 @@
                     interim += transcript;
                 }
             }
-            
+
             if (interim) {
                 input.value = interim;
                 input.placeholder = '<i class="bi bi-mic"></i> ' + interim + ' (speaking...)';
             }
-            
+
             if (final) {
                 input.value = final;
                 input.placeholder = '';
                 showToast(`✅ "${final}" added`, 'success');
-                
+
                 // Trigger events
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
-                
+
                 // Auto-stop after successful input
                 stopListening();
             }
         };
-        
-        activeRecognition.onerror = function(event) {
-            console.error('Speech error:', event.error);
+
+        activeRecognition.onerror = function (event) {
             let msg = 'Voice error';
             if (event.error === 'no-speech') msg = 'No speech detected';
             else if (event.error === 'not-allowed') msg = 'Microphone permission denied';
@@ -216,8 +214,8 @@
             showToast(msg, 'error');
             stopListening();
         };
-        
-        activeRecognition.onend = function() {
+
+        activeRecognition.onend = function () {
             if (activeInput === input) {
                 // Only clear if this is still the active input
                 input.classList.remove('voice-input-listening');
@@ -229,31 +227,31 @@
                 activeInput = null;
             }
         };
-        
+
         activeRecognition.start();
         return true;
     }
-    
+
     // Add voice input to an element
     function addVoiceInput(input) {
         if (input.hasAttribute('data-voice-attached')) return;
-        
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             console.log('Speech recognition not supported');
             return;
         }
-        
+
         input.setAttribute('data-voice-attached', 'true');
-        
+
         // Create wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'voice-input-wrapper';
         wrapper.style.cssText = 'position: relative; display: inline-block; width: 100%;';
-        
+
         input.parentNode.insertBefore(wrapper, input);
         wrapper.appendChild(input);
-        
+
         // Create mic button (visual only, not for clicking - focus triggers listening)
         const micBtn = document.createElement('button');
         micBtn.type = 'button';
@@ -275,42 +273,42 @@
             font-size: 16px;
             pointer-events: none;
         `;
-        
+
         input.style.paddingRight = '40px';
         wrapper.appendChild(micBtn);
-        
+
         // FOCUS: Start listening when input gets focus
-        input.addEventListener('focus', function(e) {
+        input.addEventListener('focus', function (e) {
             startListening(input, micBtn);
         });
-        
+
         // BLUR: Stop listening when input loses focus
-        input.addEventListener('blur', function(e) {
+        input.addEventListener('blur', function (e) {
             if (activeInput === input) {
                 stopListening();
             }
         });
-        
+
         // Optional: Click on mic button also triggers focus
         micBtn.style.pointerEvents = 'auto';
-        micBtn.addEventListener('click', function(e) {
+        micBtn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             input.focus();
         });
     }
-    
+
     // Initialize all voice inputs
     function initVoiceInputs() {
         const inputs = document.querySelectorAll('input.voice-input, input[data-voice="true"]');
         console.log(`Found ${inputs.length} inputs for voice attachment`);
         inputs.forEach(addVoiceInput);
     }
-    
+
     // Watch for dynamically added inputs
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
                 if (node.nodeType === 1) {
                     if (node.matches && node.matches('input.voice-input, input[data-voice="true"]')) {
                         addVoiceInput(node);
@@ -323,10 +321,10 @@
             });
         });
     });
-    
+
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             addStyles();
             initVoiceInputs();
             observer.observe(document.body, { childList: true, subtree: true });

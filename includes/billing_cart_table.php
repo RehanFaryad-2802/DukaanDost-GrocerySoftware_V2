@@ -26,3 +26,4 @@
         </table>
     </div>
 </div>
+<input type="hidden" id="user_role" value="<?php echo $_SESSION['user_role']; ?>">

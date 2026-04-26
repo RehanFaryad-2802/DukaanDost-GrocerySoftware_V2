@@ -77,7 +77,49 @@ checkAuth();
             background: #adb5bd;
         }
 
-        .urdu-text,
+        /* Quick add section styling */
+        #quick_add_section {
+            border-top: 1px solid #dee2e6;
+            padding-top: 15px;
+            margin-top: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        #quick_add_section .alert {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+        }
+
+        #quick_add_section input,
+        #quick_add_section select {
+            font-size: 14px;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* .urdu-text, */
         /* *,
         [dir="rtl"] {
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
