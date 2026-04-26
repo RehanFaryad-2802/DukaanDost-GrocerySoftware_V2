@@ -5,7 +5,6 @@ header('Content-Type: application/json');
 
 $product_id = $_GET['id'] ?? 0;
 
-// Get retail price
 $stmt = $pdo->prepare("
     SELECT price_per_unit FROM pricing_tiers 
     WHERE product_id = ? AND customer_type = 'retail' 
@@ -14,7 +13,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$product_id]);
 $retail = $stmt->fetchColumn() ?: 0;
 
-// Get wholesale price
 $stmt = $pdo->prepare("
     SELECT price_per_unit FROM pricing_tiers 
     WHERE product_id = ? AND customer_type = 'wholesale' 

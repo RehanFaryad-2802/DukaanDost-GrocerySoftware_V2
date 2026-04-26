@@ -4,7 +4,6 @@ checkAuth();
 
 $invoice_id = $_GET['id'] ?? 0;
 
-// Get invoice details
 $stmt = $pdo->prepare("
     SELECT i.*, u.full_name as created_by_name
     FROM invoices i
@@ -18,21 +17,18 @@ if (!$invoice) {
     die("Invoice not found");
 }
 
-// Get invoice items
 $stmt = $pdo->prepare("
     SELECT * FROM invoice_items WHERE invoice_id = ?
 ");
 $stmt->execute([$invoice_id]);
 $items = $stmt->fetchAll();
 
-// Get store settings
 $stmt = $pdo->query("SELECT * FROM settings");
 $settings = [];
 while ($row = $stmt->fetch()) {
     $settings[$row['setting_key']] = $row['setting_value'];
 }
 
-// Generate HTML receipt for printing
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,7 +43,8 @@ while ($row = $stmt->fetch()) {
             size: 72mm 297mm;
             margin: 0;
         }
-        :root{
+
+        :root {
             --size: 13px
         }
 

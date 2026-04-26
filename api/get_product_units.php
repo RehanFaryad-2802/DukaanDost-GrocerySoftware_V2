@@ -5,7 +5,6 @@ header('Content-Type: application/json');
 
 $product_id = $_GET['product_id'] ?? 0;
 
-// Get product with base unit
 $stmt = $pdo->prepare("
     SELECT p.*, u.name as base_unit_name, u.symbol as base_unit_symbol, u.id as base_unit_id
     FROM products p
@@ -15,7 +14,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
 
-// Get all unit conversions for this product
 $stmt = $pdo->prepare("
     SELECT 
         uc.*,
@@ -32,7 +30,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$product_id]);
 $conversions = $stmt->fetchAll();
 
-// Get all available packaging units
 $stmt = $pdo->prepare("
     SELECT * FROM units 
     WHERE type IN ('packaging', 'base') 

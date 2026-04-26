@@ -1,6 +1,4 @@
 <script>
-// ==================== PRICING MODAL FUNCTIONS ====================
-
 let currentProductId = 0;
 
 function managePricing(productId) {

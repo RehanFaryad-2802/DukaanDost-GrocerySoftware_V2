@@ -3,7 +3,6 @@ require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 require_once 'config/functions.php';
 
-// ==================== HANDLE ADD PRODUCT ====================
 if (isset($_POST['add_product'])) {
     $code = trim($_POST['code']);
     $name = trim($_POST['name']);
@@ -17,7 +16,6 @@ if (isset($_POST['add_product'])) {
     try {
         $pdo->beginTransaction();
 
-        // Check if code already exists
         $stmt = $pdo->prepare("SELECT id FROM products WHERE code = ?");
         $stmt->execute([$code]);
         if ($stmt->fetch()) {
@@ -58,7 +56,6 @@ if (isset($_POST['add_product'])) {
     }
 }
 
-// ==================== BULK DELETE & SINGLE DELETE ====================
 if (isset($_POST['bulk_delete']) && isset($_POST['selected_products'])) {
     $ids = array_map('intval', $_POST['selected_products']);
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
@@ -78,7 +75,8 @@ if (isset($_POST['bulk_delete']) && isset($_POST['selected_products'])) {
         try {
             $stmt = $pdo->prepare("DELETE FROM unit_conversions WHERE product_id IN ($placeholders)");
             $stmt->execute($ids);
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         $stmt = $pdo->prepare("DELETE FROM products WHERE id IN ($placeholders)");
         $stmt->execute($ids);
@@ -110,7 +108,8 @@ if (isset($_GET['delete'])) {
         try {
             $stmt = $pdo->prepare("DELETE FROM unit_conversions WHERE product_id = ?");
             $stmt->execute([$id]);
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
         $stmt->execute([$id]);
@@ -124,7 +123,6 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// ==================== FETCH PRODUCTS & CATEGORIES ====================
 $category_filter = $_GET['category'] ?? '';
 $search = $_GET['search'] ?? '';
 
@@ -188,8 +186,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                 <select name="category" class="form-select" onchange="this.form.submit()">
                     <option value="">All Categories</option>
                     <?php foreach ($cats as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat['category']) ?>" 
-                                <?= $category_filter == $cat['category'] ? 'selected' : '' ?>>
+                        <option value="<?= htmlspecialchars($cat['category']) ?>" <?= $category_filter == $cat['category'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($cat['category']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -197,8 +194,8 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
             </div>
             <div class="col-md-4">
                 <label>Search Product</label>
-                <input dir="rtl" type="text" name="search" class="form-control voice-input" 
-                       placeholder="نام یا کوڈ۔۔۔" value="<?= htmlspecialchars($search) ?>">
+                <input dir="rtl" type="text" name="search" class="form-control voice-input" placeholder="نام یا کوڈ۔۔۔"
+                    value="<?= htmlspecialchars($search) ?>">
             </div>
             <div class="col-md-2">
                 <label>&nbsp;</label>
@@ -210,8 +207,8 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                 <label>&nbsp;</label>
                 <div>
                     <a href="products.php" class="btn btn-outline-secondary">Reset</a>
-                    <button type="button" class="btn btn-danger" onclick="submitBulkDelete()" 
-                            id="bulkDeleteBtn" style="display: none;">
+                    <button type="button" class="btn btn-danger" onclick="submitBulkDelete()" id="bulkDeleteBtn"
+                        style="display: none;">
                         <i class="bi bi-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
                     </button>
                 </div>

@@ -1,5 +1,4 @@
 <?php
-// Connect to database
 $conn = new mysqli('localhost', 'root', '', 'grocery_billing');
 
 if ($conn->connect_error) {
@@ -12,13 +11,12 @@ echo "<h2>Fixing User Passwords</h2>";
 $new_hash = password_hash('123456', PASSWORD_DEFAULT);
 echo "<p>New hash created: " . substr($new_hash, 0, 30) . "...</p>";
 
-// Update all users with new hash
 $users = ['admin', 'manager', 'cashier1', 'cashier2'];
 
 foreach ($users as $username) {
     $stmt = $conn->prepare("UPDATE users SET password = ? WHERE username = ?");
     $stmt->bind_param("ss", $new_hash, $username);
-    
+
     if ($stmt->execute()) {
         echo "<p style='color: green;'>✅ Updated password for: $username</p>";
     } else {

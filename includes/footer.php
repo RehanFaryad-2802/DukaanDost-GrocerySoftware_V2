@@ -1,29 +1,27 @@
-            </main>
-        </div>
-    </div>
-    
-    <!-- Bootstrap JavaScript -->
-    <script src="assets/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-    // Auto-hide alerts after 3 seconds
-    setTimeout(function() {
+</main>
+</div>
+</div>
+
+<!-- Bootstrap JavaScript -->
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+    setTimeout(function () {
         let alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
+        alerts.forEach(function (alert) {
             alert.style.display = 'none';
         });
     }, 3000);
-    
-    // Format currency
+
     function formatCurrency(amount) {
         return 'Rs. ' + parseFloat(amount).toFixed(2);
     }
-    
-    // Confirm delete actions
+
     function confirmDelete(message) {
         return confirm(message || 'Are you sure you want to delete this item?');
     }
-    </script>
+</script>
 </body>
+
 </html>

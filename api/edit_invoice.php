@@ -7,20 +7,17 @@ $data = json_decode(file_get_contents('php://input'), true);
 $action = $data['action'] ?? '';
 
 if ($action === 'get_invoice') {
-    // Get invoice for editing
     $invoice_id = $data['invoice_id'] ?? 0;
-    
-    // Get invoice header
+
     $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
     $stmt->execute([$invoice_id]);
     $invoice = $stmt->fetch();
-    
+
     if (!$invoice) {
         echo json_encode(['success' => false, 'error' => 'Invoice not found']);
         exit;
     }
-    
-    // Get invoice items
+
     $stmt = $pdo->prepare("
         SELECT 
             product_id, 
@@ -34,7 +31,7 @@ if ($action === 'get_invoice') {
     ");
     $stmt->execute([$invoice_id]);
     $items = $stmt->fetchAll();
-    
+
     echo json_encode([
         'success' => true,
         'invoice' => [
@@ -50,18 +47,18 @@ if ($action === 'get_invoice') {
             'items' => $items
         ]
     ]);
-    
+
 } elseif ($action === 'update_invoice') {
     // Update existing invoice (creates new version)
     $old_invoice_id = $data['old_invoice_id'] ?? 0;
-    
+
     try {
         $pdo->beginTransaction();
-        
+
         // Generate new invoice number
         $stmt = $pdo->query("SELECT generate_invoice_no() as invoice_no");
         $new_invoice_no = $stmt->fetch()['invoice_no'];
-        
+
         // Insert new invoice
         $stmt = $pdo->prepare("
             INSERT INTO invoices (
@@ -82,9 +79,9 @@ if ($action === 'get_invoice') {
             $_SESSION['user_id'],
             $old_invoice_id
         ]);
-        
+
         $new_invoice_id = $pdo->lastInsertId();
-        
+
         // Insert items and update stock
         foreach ($data['items'] as $item) {
             // Insert invoice item
@@ -101,12 +98,12 @@ if ($action === 'get_invoice') {
                 $item['total_price'],
                 $item['tier_info'] ?? null
             ]);
-            
+
             // Update stock
             $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
             $stmt->execute([$item['quantity'], $item['product_id']]);
         }
-        
+
         // Mark old invoice as edited
         $stmt = $pdo->prepare("
             UPDATE invoices 
@@ -114,21 +111,21 @@ if ($action === 'get_invoice') {
             WHERE id = ?
         ");
         $stmt->execute([$old_invoice_id]);
-        
+
         $pdo->commit();
-        
+
         echo json_encode([
             'success' => true,
             'invoice_no' => $new_invoice_no,
             'invoice_id' => $new_invoice_id,
             'message' => 'Invoice updated successfully!'
         ]);
-        
+
     } catch (Exception $e) {
         $pdo->rollBack();
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
-    
+
 } elseif ($action === 'list_editable') {
     // List recent invoices for editing
     $stmt = $pdo->query("
@@ -143,7 +140,7 @@ if ($action === 'get_invoice') {
         LIMIT 50
     ");
     $invoices = $stmt->fetchAll();
-    
+
     echo json_encode(['success' => true, 'invoices' => $invoices]);
 }
 ?>

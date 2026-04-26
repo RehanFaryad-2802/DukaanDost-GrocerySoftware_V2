@@ -83,7 +83,7 @@ async function renderCart() {
                            onchange="updateCartItemQuantity(${index}, this.value)"
                            style="width: 100px;">
                 </td>
-                <td width="130">
+                <td width="120">
                     <select class="form-select form-select-sm cart-unit-select" 
                             data-index="${index}"
                             onchange="changePackage(${index}, this.value, this.options[this.selectedIndex])"

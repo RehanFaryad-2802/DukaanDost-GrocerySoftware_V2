@@ -13,7 +13,6 @@ try {
         exit;
     }
 
-    // Get ALL pricing tiers for this product and customer type, ordered by min_quantity DESC
     $stmt = $pdo->prepare("
         SELECT * FROM pricing_tiers 
         WHERE product_id = ? AND customer_type = ?
@@ -24,11 +23,9 @@ try {
 
     $unit_price = 0;
     $tier_info = '';
-    
-    // Find the appropriate tier based on quantity
+
     foreach ($all_tiers as $tier) {
         if ($quantity >= $tier['min_quantity']) {
-            // Check max_quantity condition
             if ($tier['max_quantity'] === null || $quantity <= $tier['max_quantity']) {
                 $unit_price = floatval($tier['price_per_unit']);
                 $tier_info = "Tier: {$tier['min_quantity']} - " . ($tier['max_quantity'] ?? '∞') . " units";
@@ -37,7 +34,6 @@ try {
         }
     }
 
-    // If no tier found, try to get the lowest tier (fallback)
     if ($unit_price == 0 && !empty($all_tiers)) {
         $stmt = $pdo->prepare("
             SELECT * FROM pricing_tiers 
@@ -53,13 +49,13 @@ try {
     }
 
     $total = $unit_price * $quantity;
-    
+
     echo json_encode([
         'unit_price' => $unit_price,
         'total_price' => $total,
         'tier_info' => $tier_info
     ]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['unit_price' => 0, 'total_price' => 0, 'tier_info' => '']);
 }

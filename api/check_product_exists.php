@@ -10,7 +10,6 @@ if (empty($product_name)) {
 }
 
 try {
-    // Check for exact match (case-insensitive for Latin, exact for Unicode)
     $stmt = $pdo->prepare("
         SELECT id, name, status 
         FROM products 

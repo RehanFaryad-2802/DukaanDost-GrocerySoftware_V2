@@ -1,8 +1,4 @@
 <script>
-// ===============================================
-// PACKAGE MANAGEMENT FUNCTIONS
-// ===============================================
-
 let packageCount = 0;
 let currentUnitProductId = 0;
 let currentPackageProductName = '';

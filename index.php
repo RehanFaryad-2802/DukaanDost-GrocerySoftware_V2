@@ -11,26 +11,24 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once 'config/database.php';
-    
+
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-    
+
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND status = 'active'");
     $stmt->execute([$username]);
     $user = $stmt->fetch();
-    
+
     if ($user) {
-        // Check password
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['full_name'] = $user['full_name'];
-            
-            // Update last login
+
             $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
             $stmt->execute([$user['id']]);
-            
+
             header('Location: dashboard.php');
             exit;
         } else {
@@ -43,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -58,15 +57,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             align-items: center;
             justify-content: center;
         }
+
         .login-box {
             background: white;
             padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             width: 400px;
         }
     </style>
 </head>
+
 <body>
     <div class="login-box">
         <h2 class="text-center mb-4">Grocery Billing System</h2>
@@ -76,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <form method="POST">
             <div class="mb-3">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required autofocus>
+                <input type="text" name="username" class="form-control"
+                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
+                    required autofocus>
             </div>
             <div class="mb-3">
                 <label>Password</label>
@@ -87,4 +90,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     <script src=""></script>
 </body>
+
 </html>

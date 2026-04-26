@@ -14,16 +14,14 @@ try {
     $min_stock_alert = floatval($_POST['min_stock_alert'] ?? 10);
     $purchase_price = floatval($_POST['purchase_price'] ?? 0);
     $status = $_POST['status'] ?? 'active';
-    
-    // Check if code exists for another product
+
     $stmt = $pdo->prepare("SELECT id FROM products WHERE code = ? AND id != ?");
     $stmt->execute([$code, $id]);
     if ($stmt->fetch()) {
         echo json_encode(['success' => false, 'error' => 'Product code already exists!']);
         exit;
     }
-    
-    // Update product
+
     $stmt = $pdo->prepare("
         UPDATE products SET 
             code = ?,
@@ -38,7 +36,7 @@ try {
             updated_at = NOW()
         WHERE id = ?
     ");
-    
+
     $result = $stmt->execute([
         $code,
         $name,
@@ -51,13 +49,13 @@ try {
         $status,
         $id
     ]);
-    
+
     if ($result) {
         echo json_encode(['success' => true, 'message' => "Product '$name' updated successfully!"]);
     } else {
         echo json_encode(['success' => false, 'error' => 'No changes made or update failed']);
     }
-    
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

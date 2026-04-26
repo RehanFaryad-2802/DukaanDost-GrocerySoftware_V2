@@ -26,9 +26,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 
-// Add prices to each product
 foreach ($products as &$product) {
-    // Retail price
     $stmt = $pdo->prepare("
         SELECT price_per_unit FROM pricing_tiers 
         WHERE product_id = ? AND customer_type = 'retail' 
@@ -36,8 +34,7 @@ foreach ($products as &$product) {
     ");
     $stmt->execute([$product['id']]);
     $product['retail_price'] = $stmt->fetchColumn() ?: 0;
-    
-    // Wholesale price
+
     $stmt = $pdo->prepare("
         SELECT price_per_unit FROM pricing_tiers 
         WHERE product_id = ? AND customer_type = 'wholesale' 

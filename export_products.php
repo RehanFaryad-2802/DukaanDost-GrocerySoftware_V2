@@ -2,7 +2,6 @@
 require_once 'config/database.php';
 checkAuth();
 
-// Get all products with pricing tiers
 $stmt = $pdo->query("
     SELECT 
         p.id,
@@ -28,18 +27,24 @@ $stmt = $pdo->query("
 ");
 $products = $stmt->fetchAll();
 
-// Set headers for CSV download
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename=products_export_' . date('Y-m-d') . '.csv');
 
-// Create output stream
 $output = fopen('php://output', 'w');
 
-// Add column headers
 fputcsv($output, [
-    'ID', 'Code', 'Name', 'Description', 'Unit', 'Category', 
-    'Current Stock', 'Min Alert', 'Purchase Price', 'Status', 
-    'Pricing Tiers', 'Created Date'
+    'ID',
+    'Code',
+    'Name',
+    'Description',
+    'Unit',
+    'Category',
+    'Current Stock',
+    'Min Alert',
+    'Purchase Price',
+    'Status',
+    'Pricing Tiers',
+    'Created Date'
 ]);
 
 // Add data rows

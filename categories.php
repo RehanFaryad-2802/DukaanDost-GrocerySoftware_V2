@@ -2,17 +2,15 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Only admin and manager can access
 if ($_SESSION['user_role'] != 'admin' && $_SESSION['user_role'] != 'manager') {
     header('Location: dashboard.php');
     exit;
 }
 
-// Handle add category
 if (isset($_POST['add_category'])) {
     $name = trim($_POST['category_name']);
     $description = trim($_POST['description'] ?? '');
-    
+
     if (!empty($name)) {
         try {
             $stmt = $pdo->prepare("INSERT INTO categories (name, description) VALUES (?, ?)");
@@ -28,27 +26,23 @@ if (isset($_POST['add_category'])) {
     }
 }
 
-// Handle edit category
 if (isset($_POST['edit_category'])) {
     $id = intval($_POST['category_id']);
     $name = trim($_POST['edit_name']);
     $description = trim($_POST['edit_description'] ?? '');
-    
+
     if (!empty($name)) {
         try {
-            // Get old category name
             $stmt = $pdo->prepare("SELECT name FROM categories WHERE id = ?");
             $stmt->execute([$id]);
             $oldName = $stmt->fetchColumn();
-            
-            // Update category in categories table
+
             $stmt = $pdo->prepare("UPDATE categories SET name = ?, description = ? WHERE id = ?");
             $stmt->execute([$name, $description, $id]);
-            
-            // Update all products using this category
+
             $stmt = $pdo->prepare("UPDATE products SET category = ? WHERE category = ?");
             $stmt->execute([$name, $oldName]);
-            
+
             $success = "Category updated successfully!";
         } catch (PDOException $e) {
             if ($e->errorInfo[1] == 1062) {
@@ -60,19 +54,17 @@ if (isset($_POST['edit_category'])) {
     }
 }
 
-// Handle delete category
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    
-    // Check if category is in use
+
     $stmt = $pdo->prepare("SELECT name FROM categories WHERE id = ?");
     $stmt->execute([$id]);
     $catName = $stmt->fetchColumn();
-    
+
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category = ?");
     $stmt->execute([$catName]);
     $inUse = $stmt->fetchColumn();
-    
+
     if ($inUse > 0) {
         $error = "Cannot delete - category is used by $inUse product(s)!";
     } else {
@@ -139,7 +131,7 @@ $categories = $stmt->fetchAll();
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-success text-white">
@@ -157,36 +149,41 @@ $categories = $stmt->fetchAll();
                     </thead>
                     <tbody>
                         <?php foreach ($categories as $cat): ?>
-                        <tr>
-                            <td><strong><?php echo htmlspecialchars($cat['name']); ?></strong></td>
-                            <td><small><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small></td>
-                            <td>
-                                <?php if ($cat['product_count'] > 0): ?>
-                                    <span class="badge bg-primary"><?php echo $cat['product_count']; ?> products</span>
-                                <?php else: ?>
-                                    <span class="badge bg-secondary">0 products</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-warning" onclick="editCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($cat['description'] ?? '', ENT_QUOTES); ?>')">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <?php if ($cat['product_count'] == 0): ?>
-                                    <a href="categories.php?delete=<?php echo $cat['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this category?')">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+                            <tr>
+                                <td><strong><?php echo htmlspecialchars($cat['name']); ?></strong></td>
+                                <td><small><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small></td>
+                                <td>
+                                    <?php if ($cat['product_count'] > 0): ?>
+                                        <span class="badge bg-primary"><?php echo $cat['product_count']; ?> products</span>
                                     <?php else: ?>
-                                    <button class="btn btn-outline-secondary" disabled title="Cannot delete - in use">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                        <span class="badge bg-secondary">0 products</span>
                                     <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning"
+                                            onclick="editCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($cat['description'] ?? '', ENT_QUOTES); ?>')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <?php if ($cat['product_count'] == 0): ?>
+                                            <a href="categories.php?delete=<?php echo $cat['id']; ?>"
+                                                class="btn btn-outline-danger"
+                                                onclick="return confirm('Delete this category?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <button class="btn btn-outline-secondary" disabled title="Cannot delete - in use">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
                         <?php if (count($categories) == 0): ?>
-                        <tr><td colspan="4" class="text-center py-4 text-muted">No categories found.</td></tr>
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No categories found.</td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -212,7 +209,8 @@ $categories = $stmt->fetchAll();
                     </div>
                     <div class="mb-3">
                         <label>Description</label>
-                        <textarea name="edit_description" id="edit_category_desc" class="form-control" rows="2"></textarea>
+                        <textarea name="edit_description" id="edit_category_desc" class="form-control"
+                            rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -225,12 +223,12 @@ $categories = $stmt->fetchAll();
 </div>
 
 <script>
-function editCategory(id, name, description) {
-    document.getElementById('edit_category_id').value = id;
-    document.getElementById('edit_category_name').value = name;
-    document.getElementById('edit_category_desc').value = description;
-    new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
-}
+    function editCategory(id, name, description) {
+        document.getElementById('edit_category_id').value = id;
+        document.getElementById('edit_category_name').value = name;
+        document.getElementById('edit_category_desc').value = description;
+        new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+    }
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

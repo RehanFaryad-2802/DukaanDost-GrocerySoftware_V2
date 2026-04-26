@@ -1,5 +1,4 @@
 <script>
-    // Original addToCart function for quick products grid
     async function addToCart(productId, productName, unit, maxStock) {
         const quantity = prompt(`Enter quantity for ${productName} (${unit}):`, '1');
         if (!quantity || quantity <= 0) return;
@@ -27,25 +26,19 @@
             const response = await fetch(`api/search_product.php?q=${encodeURIComponent(query)}&customer_type=${customerType}`);
             const products = await response.json();
 
-            // Also check for exact product match in database (case-insensitive)
             const exactMatchCheck = await fetch(`api/check_product_exists.php?name=${encodeURIComponent(query)}`);
             const exactMatchResult = await exactMatchCheck.json();
 
-            // If exact product exists in database, DON'T show quick add form
             if (exactMatchResult.exists) {
                 document.getElementById('quick_add_section').style.display = 'none';
             }
 
-            // Check if we have any search results
             if (products.length === 0) {
-                // Only show quick add section if product doesn't exist in database
                 if (!exactMatchResult.exists) {
                     document.getElementById('quick_add_section').style.display = 'block';
-                    // Auto-fill product name with search query
                     document.getElementById('quick_product_name').value = query;
                     await loadQuickFormData();
                 } else {
-                    // Product exists but search didn't find it - show message
                     document.getElementById('search_results').innerHTML = `
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i> 
@@ -138,14 +131,15 @@
         }
     }
 
-    // Option 1: Add to cart only (without saving to product list)
-    async function addToCartOnly() {
+    async function addToCartOnly(event) {
+        // Prevent default if event exists
+        if (event && event.preventDefault) event.preventDefault();
+
         const productName = document.getElementById('quick_product_name').value.trim();
         const unit = document.getElementById('quick_unit').value;
         const retailPrice = parseFloat(document.getElementById('quick_retail_price').value);
         const quantity = parseFloat(document.getElementById('quick_quantity').value);
 
-        // Validation
         if (!productName) {
             alert('Please enter product name!');
             document.getElementById('quick_product_name').focus();
@@ -167,19 +161,15 @@
             return;
         }
 
-        // Show loading state
-        const addBtn = event.target;
+        // Get the button that was clicked
+        const addBtn = event ? event.target : document.activeElement;
         const originalHtml = addBtn.innerHTML;
         addBtn.innerHTML = '<span class="loading-spinner"></span> Adding...';
         addBtn.disabled = true;
 
         try {
-            // Generate a temporary ID (negative to avoid conflict with real IDs)
             const tempId = -Date.now();
-
-            // Add to cart directly
-            const unitPrice = retailPrice;
-            const totalPrice = unitPrice * quantity;
+            const totalPrice = retailPrice * quantity;
 
             cart.unshift({
                 product_id: tempId,
@@ -188,15 +178,17 @@
                 display_unit: unit,
                 actual_quantity: quantity,
                 display_quantity: quantity,
-                unit_price: unitPrice,
+                unit_price: retailPrice,
                 total_price: totalPrice,
                 tier_info: 'Manual entry (not saved)',
                 max_stock: 999999,
                 package_multiplier: 1,
-                is_temp: true  // Mark as temporary product
+                is_temp: true,
+                packages: null,
+                selected_package_id: null
             });
 
-            renderCart();
+            await renderCart();
             updateTotal();
 
             // Clear the quick add form
@@ -206,17 +198,17 @@
             document.getElementById('quick_quantity').value = '1';
             document.getElementById('quick_unit').value = '';
             document.getElementById('quick_category').value = '';
-
-            // Hide quick add section
             document.getElementById('quick_add_section').style.display = 'none';
-
-            // Clear search input
             document.getElementById('search_product').value = '';
 
-            showNotification('success', `"${productName}" added to cart! (Not saved to product list)`);
+            if (typeof showNotification === 'function') {
+                showNotification('success', `"${productName}" added to cart!`);
+            } else {
+                alert(`"${productName}" added to cart!`);
+            }
 
         } catch (error) {
-            console.error('Error adding to cart:', error);
+            console.error('Error:', error);
             alert('Failed to add product to cart');
         } finally {
             addBtn.innerHTML = originalHtml;
@@ -224,8 +216,10 @@
         }
     }
 
-    // Option 2: Save to product list first, then add to cart
-    async function addToProductListAndCart() {
+    async function addToProductListAndCart(event) {
+        // Prevent default if event exists
+        if (event && event.preventDefault) event.preventDefault();
+
         const productName = document.getElementById('quick_product_name').value.trim();
         const unit = document.getElementById('quick_unit').value;
         const category = document.getElementById('quick_category').value || null;
@@ -233,7 +227,6 @@
         const wholesalePrice = parseFloat(document.getElementById('quick_wholesale_price').value) || 0;
         const quantity = parseFloat(document.getElementById('quick_quantity').value);
 
-        // Validation
         if (!productName) {
             alert('Please enter product name!');
             document.getElementById('quick_product_name').focus();
@@ -255,77 +248,51 @@
             return;
         }
 
-        // First, check if product already exists (double-check)
-        const checkResponse = await fetch(`api/check_product_exists.php?name=${encodeURIComponent(productName)}`);
-        const checkResult = await checkResponse.json();
+        // Check if product already exists
+        try {
+            const checkResponse = await fetch(`api/check_product_exists.php?name=${encodeURIComponent(productName)}`);
+            const checkResult = await checkResponse.json();
 
-        if (checkResult.exists) {
-            // Product exists! Ask if user wants to add existing product instead
-            const addExisting = confirm(
-                `Product "${productName}" already exists in the database!\n\n` +
-                `Would you like to add the existing product to cart instead?\n` +
-                `(Click Cancel to save as a new product with different name)`
-            );
+            if (checkResult.exists) {
+                const addExisting = confirm(
+                    `Product "${productName}" already exists!\n\n` +
+                    `Would you like to add the existing product to cart instead?`
+                );
 
-            if (addExisting) {
-                // Add the existing product to cart
-                const existingProductId = checkResult.product_id;
-
-                // Fetch product details
-                const productResponse = await fetch(`api/get_product.php?id=${existingProductId}`);
-                const existingProduct = await productResponse.json();
-
-                if (existingProduct && existingProduct.id) {
-                    // Add to cart
+                if (addExisting) {
                     await addToCartWithQuantity(
-                        existingProduct.id,
-                        existingProduct.name,
-                        existingProduct.unit,
-                        existingProduct.current_stock || 999999,
+                        checkResult.product_id,
+                        checkResult.product_name,
+                        checkResult.unit || unit,
+                        999999,
                         quantity
                     );
 
-                    // Clear form and hide
-                    document.getElementById('quick_product_name').value = '';
-                    document.getElementById('quick_retail_price').value = '';
-                    document.getElementById('quick_wholesale_price').value = '';
-                    document.getElementById('quick_quantity').value = '1';
-                    document.getElementById('quick_unit').value = '';
-                    document.getElementById('quick_category').value = '';
                     document.getElementById('quick_add_section').style.display = 'none';
                     document.getElementById('search_product').value = '';
 
-                    showNotification('success', `"${existingProduct.name}" added to cart from existing products!`);
+                    if (typeof showNotification === 'function') {
+                        showNotification('success', `"${checkResult.product_name}" added to cart!`);
+                    } else {
+                        alert(`"${checkResult.product_name}" added to cart!`);
+                    }
+                    return;
                 }
                 return;
-            } else {
-                // User wants to save as new product - modify name
-                const newName = prompt(
-                    `Product "${productName}" already exists.\n` +
-                    `Please enter a different name for the new product:`,
-                    `${productName} (New)`
-                );
-
-                if (!newName) return;
-
-                // Update the product name field and continue
-                document.getElementById('quick_product_name').value = newName;
-                // Recursive call with new name
-                return addToProductListAndCart();
             }
+        } catch (error) {
+            console.error('Error checking product:', error);
         }
 
-        // Show loading state
-        const addBtn = event.target;
+        // Get the button that was clicked
+        const addBtn = event ? event.target : document.activeElement;
         const originalHtml = addBtn.innerHTML;
-        addBtn.innerHTML = '<span class="loading-spinner"></span> Saving & Adding...';
+        addBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
         addBtn.disabled = true;
 
         try {
-            // Generate a unique product code
             const code = 'PRD' + Date.now().toString().slice(-8);
 
-            // First, save product to database
             const formData = new FormData();
             formData.append('code', code);
             formData.append('name', productName);
@@ -347,8 +314,11 @@
             const result = await response.json();
 
             if (result.success) {
-                // Add to cart
-                const unitPrice = wholesalePrice > 0 && wholesalePrice < retailPrice && quantity >= 5 ? wholesalePrice : retailPrice;
+                // Calculate price based on customer type
+                let unitPrice = retailPrice;
+                if (customerType === 'wholesale' && wholesalePrice > 0) {
+                    unitPrice = wholesalePrice;
+                }
                 const totalPrice = unitPrice * quantity;
 
                 cart.unshift({
@@ -363,10 +333,12 @@
                     tier_info: `Retail: Rs.${retailPrice} | Wholesale: Rs.${wholesalePrice}`,
                     max_stock: 999999,
                     package_multiplier: 1,
-                    is_temp: false
+                    is_temp: false,
+                    packages: null,
+                    selected_package_id: null
                 });
 
-                renderCart();
+                await renderCart();
                 updateTotal();
 
                 // Clear the quick add form
@@ -376,21 +348,21 @@
                 document.getElementById('quick_quantity').value = '1';
                 document.getElementById('quick_unit').value = '';
                 document.getElementById('quick_category').value = '';
-
-                // Hide quick add section
                 document.getElementById('quick_add_section').style.display = 'none';
-
-                // Clear search input
                 document.getElementById('search_product').value = '';
 
-                showNotification('success', `"${productName}" saved to products and added to cart!`);
+                if (typeof showNotification === 'function') {
+                    showNotification('success', `"${productName}" saved and added to cart!`);
+                } else {
+                    alert(`"${productName}" saved and added to cart!`);
+                }
 
                 // Reload quick products grid
                 if (typeof loadQuickProducts === 'function') {
                     loadQuickProducts();
                 }
             } else {
-                alert('Error saving product: ' + (result.error || 'Unknown error'));
+                alert('Error: ' + (result.error || 'Unknown error'));
             }
 
         } catch (error) {
@@ -401,7 +373,6 @@
             addBtn.disabled = false;
         }
     }
-
     async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
         const formData = new FormData();
         formData.append('product_id', productId);

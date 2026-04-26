@@ -6,16 +6,13 @@ require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 require_once 'config/functions.php';
 
-// Get date range from request
 $start_date = $_GET['start_date'] ?? date('Y-m-d');
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $report_type = $_GET['report_type'] ?? 'daily';
 
-// If no dates set, default to today
 if (empty($start_date)) $start_date = date('Y-m-d');
 if (empty($end_date)) $end_date = date('Y-m-d');
 
-// Sales Summary
 if ($report_type == 'daily') {
     $stmt = $pdo->prepare("
         SELECT 

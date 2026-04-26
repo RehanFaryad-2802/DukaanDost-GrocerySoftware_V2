@@ -2,13 +2,11 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Only admin and manager can access
 if ($_SESSION['user_role'] != 'admin' && $_SESSION['user_role'] != 'manager') {
     header('Location: dashboard.php');
     exit;
 }
 
-// Handle add customer
 if (isset($_POST['add_customer'])) {
     $name = trim($_POST['name']);
     $phone = trim($_POST['phone'] ?? '');
@@ -29,7 +27,6 @@ if (isset($_POST['add_customer'])) {
     }
 }
 
-// Handle edit customer
 if (isset($_POST['edit_customer'])) {
     $id = intval($_POST['customer_id']);
     $name = trim($_POST['edit_name']);
@@ -51,7 +48,6 @@ if (isset($_POST['edit_customer'])) {
     }
 }
 
-// Handle delete
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     

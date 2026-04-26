@@ -8,7 +8,6 @@ try {
     $units = $stmt->fetchAll();
     echo json_encode($units);
 } catch (Exception $e) {
-    // If units table doesn't exist, return default units
     $defaultUnits = [
         ['id' => 1, 'name' => 'Piece', 'symbol' => 'Piece', 'type' => 'base'],
         ['id' => 2, 'name' => 'Kilogram', 'symbol' => 'kg', 'type' => 'weight'],

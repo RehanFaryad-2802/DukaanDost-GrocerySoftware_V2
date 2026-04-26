@@ -5,13 +5,11 @@ ini_set('display_errors', 1);
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Only admin can access users page
 if ($_SESSION['user_role'] != 'admin') {
     header('Location: dashboard.php');
     exit;
 }
 
-// Handle add user
 if (isset($_POST['add_user'])) {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
@@ -40,7 +38,6 @@ if (isset($_POST['add_user'])) {
     }
 }
 
-// Handle delete user
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     
@@ -54,7 +51,6 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Handle toggle status
 if (isset($_GET['toggle'])) {
     $id = intval($_GET['toggle']);
     

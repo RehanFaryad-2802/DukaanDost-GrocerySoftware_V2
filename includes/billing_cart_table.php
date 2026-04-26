@@ -9,8 +9,8 @@
             <thead>
                 <tr>
                     <th>Product</th>
-                    <th width="100">Quantity</th>
-                    <th width="80">Unit</th>
+                    <th width="50">Quantity</th>
+                    <th width="120">Unit</th>
                     <th width="120">Unit Price</th>
                     <th width="120">Total</th>
                     <th width="50"></th>

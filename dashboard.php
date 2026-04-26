@@ -6,7 +6,6 @@ require_once 'config/functions.php';
 $today_sales = getTodaySales($pdo);
 $low_stock = getLowStockProducts($pdo);
 
-// Get recent invoices
 $stmt = $pdo->prepare("
     SELECT i.*, u.full_name 
     FROM invoices i

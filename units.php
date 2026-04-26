@@ -2,13 +2,11 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Only admin and manager can access
 if ($_SESSION['user_role'] != 'admin' && $_SESSION['user_role'] != 'manager') {
     header('Location: dashboard.php');
     exit;
 }
 
-// Handle add unit
 if (isset($_POST['add_unit'])) {
     $name = trim($_POST['unit_name']);
     $symbol = trim($_POST['unit_symbol']);
@@ -29,7 +27,6 @@ if (isset($_POST['add_unit'])) {
     }
 }
 
-// Handle edit unit
 if (isset($_POST['edit_unit'])) {
     $id = intval($_POST['unit_id']);
     $name = trim($_POST['edit_name']);
@@ -64,7 +61,6 @@ if (isset($_POST['edit_unit'])) {
     }
 }
 
-// Handle delete unit
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     

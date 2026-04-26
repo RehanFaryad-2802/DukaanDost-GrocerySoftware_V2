@@ -21,7 +21,6 @@
                 </thead>
                 <tbody>
                     <?php foreach ($products as $product):
-                        // Get retail price
                         $stmt = $pdo->prepare("
                             SELECT price_per_unit FROM pricing_tiers 
                             WHERE product_id = ? AND customer_type = 'retail' 
@@ -30,7 +29,6 @@
                         $stmt->execute([$product['id']]);
                         $retail = $stmt->fetchColumn() ?: 0;
 
-                        // Get wholesale price
                         $stmt = $pdo->prepare("
                             SELECT price_per_unit FROM pricing_tiers 
                             WHERE product_id = ? AND customer_type = 'wholesale' 
@@ -40,9 +38,9 @@
                         $wholesale = $stmt->fetchColumn() ?: 0;
 
                         $stock_class = $product['current_stock'] <= $product['min_stock_alert'] ? 'danger' : 'success';
-                    ?>
+                        ?>
                         <tr>
-                            <td><input type="checkbox" name="selected_products[]" value="<?= $product['id'] ?>" 
+                            <td><input type="checkbox" name="selected_products[]" value="<?= $product['id'] ?>"
                                     class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
                             <td><small><?= htmlspecialchars($product['code']) ?></small></td>
                             <td dir="rtl"><strong><?= htmlspecialchars($product['name']) ?></strong></td>
@@ -55,19 +53,21 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
-                                        <button type="button" class="btn btn-outline-primary" onclick="editProduct(<?= $product['id'] ?>)">
+                                        <button type="button" class="btn btn-outline-primary"
+                                            onclick="editProduct(<?= $product['id'] ?>)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button type="button" class="btn btn-outline-success" onclick="managePricing(<?= $product['id'] ?>)">
+                                        <button type="button" class="btn btn-outline-success"
+                                            onclick="managePricing(<?= $product['id'] ?>)">
                                             <i class="bi bi-tag"></i>
                                         </button>
-                                        <button type="button" class="btn btn-outline-secondary" 
-                                                onclick="managePackages(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>')" 
-                                                title="Packages">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="managePackages(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>')"
+                                            title="Packages">
                                             <i class="bi bi-boxes"></i>
                                         </button>
-                                        <a href="products.php?delete=<?= $product['id'] ?>" 
-                                           class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
+                                        <a href="products.php?delete=<?= $product['id'] ?>" class="btn btn-outline-danger"
+                                            onclick="return confirm('Delete this product?')">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     <?php else: ?>

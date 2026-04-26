@@ -46,13 +46,13 @@
                         value="1" step="any">
                 </div>
                 <div class="col-md-6 mb-2">
-                    <button class="btn btn-success w-100" onclick="addToCartOnly()">
+                    <button class="btn btn-success w-100" onclick="addToCartOnly(event)">
                         <i class="bi bi-cart-plus"></i> Add to Cart Only
                     </button>
                     <small class="text-muted">Adds to cart without saving to product list</small>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <button class="btn btn-primary w-100" onclick="addToProductListAndCart()">
+                    <button class="btn btn-primary w-100" onclick="addToProductListAndCart(event)">
                         <i class="bi bi-database-add"></i> Save to Products & Add to Cart
                     </button>
                     <small class="text-muted">Saves to product list first, then adds to cart</small>

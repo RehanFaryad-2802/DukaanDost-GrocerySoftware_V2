@@ -16,13 +16,10 @@ checkAuth();
     <!-- <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet"> -->
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="assets/site.webmanifest">
-    <!-- Bootstrap CSS -->
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Bootstrap Icons (local) -->
     <link href="assets/css/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Custom CSS -->
     <link href="assets/css/style.css" rel="stylesheet">
 
     <style>

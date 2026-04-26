@@ -2,7 +2,6 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Get all products with complete details
 $stmt = $pdo->query("
     SELECT 
         p.*,
@@ -20,7 +19,6 @@ $stmt = $pdo->query("
 ");
 $products = $stmt->fetchAll();
 
-// Get summary statistics
 $total_products = count($products);
 $total_stock_value = 0;
 $active_products = 0;

@@ -57,7 +57,6 @@
             completeBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Payment';
         }
     }
-    // Change package for cart item
     async function changePackage(index, packageId) {
         if (!packageId) return;
 

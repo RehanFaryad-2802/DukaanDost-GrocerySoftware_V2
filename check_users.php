@@ -6,7 +6,7 @@ echo "<h3>Users in database:</h3>";
 echo "<table border='1' cellpadding='10'>";
 echo "<tr><th>ID</th><th>Username</th><th>Role</th><th>Status</th></tr>";
 
-while($row = $result->fetch_assoc()) {
+while ($row = $result->fetch_assoc()) {
     echo "<tr>";
     echo "<td>" . $row['id'] . "</td>";
     echo "<td>" . $row['username'] . "</td>";
@@ -16,7 +16,6 @@ while($row = $result->fetch_assoc()) {
 }
 echo "</table>";
 
-// Test login manually
 $username = 'admin';
 $stmt = $conn->prepare("SELECT password FROM users WHERE username = ?");
 $stmt->bind_param("s", $username);

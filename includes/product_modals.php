@@ -1,5 +1,4 @@
 <script>
-// ==================== ADD PRODUCT MODAL ====================
 async function openAddProductModal() {
     const container = document.getElementById('addProductModalContainer');
 
@@ -102,7 +101,6 @@ function generateProductCode() {
     document.getElementById('productCodeInput').value = `PRD${timestamp}${random}`;
 }
 
-// Category options
 function getCategorySelectOptions(selectedCategory = '') {
     const categories = <?php
         $stmt = $pdo->query("SELECT name FROM categories ORDER BY name");
@@ -116,7 +114,6 @@ function getCategorySelectOptions(selectedCategory = '') {
     return options;
 }
 
-// ==================== EDIT PRODUCT ====================
 async function editProduct(id) {
     const response = await fetch(`api/get_product.php?id=${id}`);
     const product = await response.json();

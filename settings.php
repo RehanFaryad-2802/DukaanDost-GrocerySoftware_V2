@@ -2,13 +2,11 @@
 require_once 'includes/header.php';
 require_once 'includes/sidebar.php';
 
-// Only admin can access settings
 if ($_SESSION['user_role'] != 'admin') {
     header('Location: dashboard.php');
     exit;
 }
 
-// Handle save settings
 if (isset($_POST['save_settings'])) {
     $store_name = $_POST['store_name'] ?? '';
     $store_address = $_POST['store_address'] ?? '';
@@ -19,7 +17,7 @@ if (isset($_POST['save_settings'])) {
     $receipt_footer = $_POST['receipt_footer'] ?? '';
     $currency_symbol = $_POST['currency_symbol'] ?? 'Rs.';
     $low_stock_alert = $_POST['low_stock_alert'] ?? 10;
-    
+
     try {
         $settings = [
             'store_name' => $store_name,
@@ -32,20 +30,19 @@ if (isset($_POST['save_settings'])) {
             'currency_symbol' => $currency_symbol,
             'low_stock_alert' => $low_stock_alert
         ];
-        
+
         foreach ($settings as $key => $value) {
             $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = ?");
             $stmt->execute([$value, $key]);
         }
-        
+
         $success = "Settings saved successfully!";
-        
+
     } catch (Exception $e) {
         $error = "Error saving settings: " . $e->getMessage();
     }
 }
 
-// Get current settings
 $stmt = $pdo->query("SELECT * FROM settings");
 $settings = [];
 while ($row = $stmt->fetch()) {
@@ -84,62 +81,64 @@ while ($row = $stmt->fetch()) {
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>Store Name</label>
-                            <input type="text" name="store_name" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['store_name'] ?? ''); ?>">
+                            <input type="text" name="store_name" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['store_name'] ?? ''); ?>">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Store Phone</label>
-                            <input type="text" name="store_phone" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['store_phone'] ?? ''); ?>">
+                            <input type="text" name="store_phone" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['store_phone'] ?? ''); ?>">
                         </div>
                         <div class="col-md-12 mb-3">
                             <label>Store Address</label>
-                            <textarea name="store_address" class="form-control" rows="3"><?php echo htmlspecialchars($settings['store_address'] ?? ''); ?></textarea>
+                            <textarea name="store_address" class="form-control"
+                                rows="3"><?php echo htmlspecialchars($settings['store_address'] ?? ''); ?></textarea>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>GST Number (Optional)</label>
-                            <input type="text" name="store_gst" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['store_gst'] ?? ''); ?>">
+                            <input type="text" name="store_gst" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['store_gst'] ?? ''); ?>">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Currency Symbol</label>
-                            <input type="text" name="currency_symbol" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['currency_symbol'] ?? 'Rs.'); ?>">
+                            <input type="text" name="currency_symbol" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['currency_symbol'] ?? 'Rs.'); ?>">
                         </div>
                     </div>
-                    
+
                     <hr>
                     <h6 class="mb-3">Invoice Settings</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>Invoice Prefix</label>
-                            <input type="text" name="invoice_prefix" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['invoice_prefix'] ?? 'INV-'); ?>">
+                            <input type="text" name="invoice_prefix" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['invoice_prefix'] ?? 'INV-'); ?>">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Low Stock Alert Quantity</label>
-                            <input type="number" name="low_stock_alert" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['low_stock_alert'] ?? '10'); ?>" step="0.001">
+                            <input type="number" name="low_stock_alert" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['low_stock_alert'] ?? '10'); ?>"
+                                step="0.001">
                         </div>
                     </div>
-                    
+
                     <hr>
                     <h6 class="mb-3">Receipt Settings</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label>Receipt Header</label>
-                            <input type="text" name="receipt_header" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['receipt_header'] ?? 'Thank you for shopping!'); ?>">
+                            <input type="text" name="receipt_header" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['receipt_header'] ?? 'Thank you for shopping!'); ?>">
                         </div>
                         <div class="col-md-12 mb-3">
                             <label>Receipt Footer</label>
-                            <input type="text" name="receipt_footer" class="form-control" 
-                                   value="<?php echo htmlspecialchars($settings['receipt_footer'] ?? 'Goods once sold cannot be returned'); ?>">
+                            <input type="text" name="receipt_footer" class="form-control"
+                                value="<?php echo htmlspecialchars($settings['receipt_footer'] ?? 'Goods once sold cannot be returned'); ?>">
                         </div>
                     </div>
-                    
+
                     <div class="mt-4">
                         <button type="submit" name="save_settings" class="btn btn-primary">
                             <i class="bi bi-save"></i> Save Settings
@@ -149,7 +148,7 @@ while ($row = $stmt->fetch()) {
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card">
             <div class="card-header bg-info text-white">
@@ -169,17 +168,20 @@ while ($row = $stmt->fetch()) {
             <div class="card-body">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'export_products.php' ? 'active bg-primary' : ''; ?>" href="export_products.php">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'export_products.php' ? 'active bg-primary' : ''; ?>"
+                            href="export_products.php">
                             <i class="bi bi-box-arrow-up"></i> Export Products
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'import_products.php' ? 'active bg-primary' : ''; ?>" href="import_products.php">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'import_products.php' ? 'active bg-primary' : ''; ?>"
+                            href="import_products.php">
                             <i class="bi bi-upload"></i> Import Products
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.sql' ? 'active bg-primary' : ''; ?>" href="sql/install.sql">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.sql' ? 'active bg-primary' : ''; ?>"
+                            href="sql/install.sql">
                             <i class="bi bi-hurricane"></i> Export Database Query
                         </a>
                     </li>
@@ -193,7 +195,7 @@ while ($row = $stmt->fetch()) {
                             <i class="bi bi-cart"></i></i> Reset Invoices
                         </a>
                     </li> -->
-                    
+
                 </ul>
             </div>
         </div>

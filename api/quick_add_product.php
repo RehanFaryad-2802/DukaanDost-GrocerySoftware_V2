@@ -21,20 +21,17 @@ try {
         exit;
     }
 
-    // Generate code if not provided
     if (empty($code)) {
         $code = 'PRD' . strtoupper(substr(uniqid(), -8));
     }
 
     $pdo->beginTransaction();
 
-    // Check if category exists, create if not
     if (!empty($category)) {
         $stmt = $pdo->prepare("INSERT IGNORE INTO categories (name) VALUES (?)");
         $stmt->execute([$category]);
     }
 
-    // Check if product with same name exists
     $stmt = $pdo->prepare("SELECT id FROM products WHERE name = ?");
     $stmt->execute([$name]);
     $existing = $stmt->fetch();
@@ -45,7 +42,6 @@ try {
         exit;
     }
 
-    // Insert product
     $stmt = $pdo->prepare("
         INSERT INTO products (code, name, description, category, unit, 
                             current_stock, min_stock_alert, purchase_price, status) 

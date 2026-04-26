@@ -2,7 +2,6 @@
 require_once 'config/database.php';
 checkAuth();
 
-// Only admin can import
 if ($_SESSION['user_role'] != 'admin') {
     die("Only admin can import products.");
 }
@@ -21,12 +20,10 @@ if (!$handle) {
     die("❌ Cannot open file");
 }
 
-// Read header row
 $header = fgetcsv($handle);
 echo "✅ File opened successfully<br>";
 echo "Found columns: " . implode(', ', $header) . "<br><br>";
 
-// Find column indexes
 $nameIndex = array_search('Product Name', $header);
 $categoryIndex = array_search('Category', $header);
 

@@ -2,28 +2,23 @@
 require_once 'config/database.php';
 checkAuth();
 
-// Only admin can reset invoices
 if ($_SESSION['user_role'] != 'admin') {
     die("Only admin can reset invoices.");
 }
 
-// Handle reset action
 if (isset($_POST['confirm_reset'])) {
     try {
         $pdo->beginTransaction();
-        
-        // Delete all invoice items first
+
         $stmt = $pdo->query("DELETE FROM invoice_items");
         $items_deleted = $stmt->rowCount();
-        
-        // Delete all invoices
+
         $stmt = $pdo->query("DELETE FROM invoices");
         $invoices_deleted = $stmt->rowCount();
-        
-        // Reset auto-increment
+
         $pdo->query("ALTER TABLE invoices AUTO_INCREMENT = 1");
         $pdo->query("ALTER TABLE invoice_items AUTO_INCREMENT = 1");
-        
+
         // Delete held invoices
         try {
             $stmt = $pdo->query("DELETE FROM held_invoices");
@@ -31,21 +26,20 @@ if (isset($_POST['confirm_reset'])) {
         } catch (Exception $e) {
             $held_deleted = 0;
         }
-        
+
         $pdo->commit();
-        
+
         $success = "✅ Successfully deleted $invoices_deleted invoices and $items_deleted items!";
         if ($held_deleted > 0) {
             $success .= " Also cleared $held_deleted held invoices.";
         }
-        
+
     } catch (Exception $e) {
         $pdo->rollBack();
         $error = "❌ Error: " . $e->getMessage();
     }
 }
 
-// Get invoice statistics
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM invoices");
 $invoice_count = $stmt->fetchColumn();
 
@@ -55,7 +49,6 @@ $item_count = $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT SUM(total_amount) as total FROM invoices WHERE payment_status = 'paid'");
 $total_sales = $stmt->fetchColumn() ?: 0;
 
-// Get held invoices count
 try {
     $stmt = $pdo->query("SELECT COUNT(*) as count FROM held_invoices");
     $held_count = $stmt->fetchColumn();
@@ -75,6 +68,7 @@ $recent_invoices = $stmt->fetchAll();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -82,13 +76,33 @@ $recent_invoices = $stmt->fetchAll();
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/bootstrap-icons.css">
     <style>
-        body { background: #f8f9fa; padding: 30px; }
-        .container { max-width: 800px; }
-        .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .danger-zone { border: 2px solid #dc3545; background: #fff5f5; }
-        .big-number { font-size: 48px; font-weight: bold; }
+        body {
+            background: #f8f9fa;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .danger-zone {
+            border: 2px solid #dc3545;
+            background: #fff5f5;
+        }
+
+        .big-number {
+            font-size: 48px;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -99,21 +113,21 @@ $recent_invoices = $stmt->fetchAll();
                 </a>
             </div>
         </div>
-        
+
         <?php if (isset($success)): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle-fill"></i> <?php echo $success; ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        
+
         <?php if (isset($error)): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-triangle-fill"></i> <?php echo $error; ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
-        
+
         <!-- Stats Card -->
         <div class="card">
             <div class="card-body">
@@ -137,43 +151,43 @@ $recent_invoices = $stmt->fetchAll();
                 </div>
             </div>
         </div>
-        
+
         <!-- Recent Invoices Preview -->
         <?php if ($invoice_count > 0): ?>
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-list"></i> Recent Invoices (will be deleted)</h5>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped mb-0">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_invoices as $inv): ?>
-                        <tr>
-                            <td><strong><?php echo $inv['invoice_no']; ?></strong></td>
-                            <td><?php echo htmlspecialchars($inv['customer_name'] ?: 'Walk-in'); ?></td>
-                            <td>Rs. <?php echo number_format($inv['total_amount']); ?></td>
-                            <td><?php echo date('d-m-Y H:i', strtotime($inv['created_at'])); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php if ($invoice_count > 5): ?>
-                <div class="card-footer text-muted">
-                    <i class="bi bi-info-circle"></i> And <?php echo $invoice_count - 5; ?> more invoices...
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> Recent Invoices (will be deleted)</h5>
                 </div>
-            <?php endif; ?>
-        </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recent_invoices as $inv): ?>
+                                <tr>
+                                    <td><strong><?php echo $inv['invoice_no']; ?></strong></td>
+                                    <td><?php echo htmlspecialchars($inv['customer_name'] ?: 'Walk-in'); ?></td>
+                                    <td>Rs. <?php echo number_format($inv['total_amount']); ?></td>
+                                    <td><?php echo date('d-m-Y H:i', strtotime($inv['created_at'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php if ($invoice_count > 5): ?>
+                    <div class="card-footer text-muted">
+                        <i class="bi bi-info-circle"></i> And <?php echo $invoice_count - 5; ?> more invoices...
+                    </div>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
-        
+
         <!-- Danger Zone -->
         <div class="card danger-zone">
             <div class="card-header bg-danger text-white">
@@ -192,23 +206,24 @@ $recent_invoices = $stmt->fetchAll();
                             <li><strong><?php echo number_format($invoice_count); ?> invoices</strong></li>
                             <li><strong><?php echo number_format($item_count); ?> invoice items</strong></li>
                             <?php if ($held_count > 0): ?>
-                            <li><strong><?php echo number_format($held_count); ?> held invoices</strong></li>
+                                <li><strong><?php echo number_format($held_count); ?> held invoices</strong></li>
                             <?php endif; ?>
                         </ul>
                         <p class="mb-0 mt-2 text-danger"><strong>This action CANNOT be undone!</strong></p>
                     </div>
-                    
-                    <form method="POST" onsubmit="return confirm('FINAL WARNING: Delete ALL invoices permanently?\n\nThis CANNOT be undone!')">
+
+                    <form method="POST"
+                        onsubmit="return confirm('FINAL WARNING: Delete ALL invoices permanently?\n\nThis CANNOT be undone!')">
                         <div class="mb-3">
                             <label class="form-label">Type <strong>DELETE ALL INVOICES</strong> to confirm</label>
-                            <input type="text" name="confirm_text" id="confirm_text" class="form-control" 
-                                   placeholder="DELETE ALL INVOICES" required 
-                                   oninput="document.getElementById('reset_btn').disabled = this.value !== 'DELETE ALL INVOICES'">
+                            <input type="text" name="confirm_text" id="confirm_text" class="form-control"
+                                placeholder="DELETE ALL INVOICES" required
+                                oninput="document.getElementById('reset_btn').disabled = this.value !== 'DELETE ALL INVOICES'">
                         </div>
-                        
+
                         <div class="d-grid">
-                            <button type="submit" name="confirm_reset" id="reset_btn" 
-                                    class="btn btn-danger btn-lg" disabled>
+                            <button type="submit" name="confirm_reset" id="reset_btn" class="btn btn-danger btn-lg"
+                                disabled>
                                 <i class="bi bi-trash-fill"></i> PERMANENTLY DELETE ALL INVOICES
                             </button>
                         </div>
@@ -216,7 +231,7 @@ $recent_invoices = $stmt->fetchAll();
                 <?php endif; ?>
             </div>
         </div>
-        
+
         <!-- What Gets Deleted vs Kept -->
         <div class="card">
             <div class="card-header bg-secondary text-white">
@@ -246,16 +261,17 @@ $recent_invoices = $stmt->fetchAll();
                 </div>
             </div>
         </div>
-        
+
         <div class="text-center mt-4 text-muted">
             <small>Reset Invoices Tool v1.0 | Admin Only</small>
         </div>
     </div>
-    
+
     <script>
-    document.getElementById('confirm_text').addEventListener('input', function() {
-        document.getElementById('reset_btn').disabled = this.value !== 'DELETE ALL INVOICES';
-    });
+        document.getElementById('confirm_text').addEventListener('input', function () {
+            document.getElementById('reset_btn').disabled = this.value !== 'DELETE ALL INVOICES';
+        });
     </script>
 </body>
+
 </html>
