@@ -1,11 +1,26 @@
 <script>
-    let cart = [];
-    let currentUnitProductId = 0;
-    let customerType = '';
-    let searchResults = [];
-    let selectedResultIndex = -1;
-    let currentProductId = 0;
-    let packageCount = 0;
+    // Global variables - check if already declared
+    if (typeof cart === 'undefined') {
+        var cart = [];
+    }
+    if (typeof customerType === 'undefined') {
+        var customerType = '';
+    }
+    if (typeof searchResults === 'undefined') {
+        var searchResults = [];
+    }
+    if (typeof selectedResultIndex === 'undefined') {
+        var selectedResultIndex = -1;
+    }
+    if (typeof currentProductId === 'undefined') {
+        var currentProductId = 0;
+    }
+    if (typeof packageCount === 'undefined') {
+        var packageCount = 0;
+    }
+    if (typeof currentUnitProductId === 'undefined') {
+        var currentUnitProductId = 0;
+    }
 
     function checkCustomerType() {
         const type = document.getElementById('customer_type').value;
@@ -57,6 +72,7 @@
             completeBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Payment';
         }
     }
+
     async function changePackage(index, packageId) {
         if (!packageId) return;
 
@@ -72,12 +88,9 @@
                 const multiplier = parseFloat(selectedPackage.multiplier);
                 const packageName = selectedPackage.package_name;
 
-                // Store package info in item
                 item.package_multiplier = multiplier;
                 item.display_unit = packageName;
                 item.selected_package_id = packageId;
-
-                // Convert display quantity
                 item.display_quantity = item.actual_quantity / multiplier;
 
                 renderCart();
@@ -90,6 +103,7 @@
             alert('Failed to change package');
         }
     }
+
     function getGrandTotal() {
         const totalText = document.getElementById('grand_total').textContent;
         return parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
@@ -207,12 +221,14 @@
         document.getElementById('grand_total').textContent = `Rs. ${total.toFixed(2)}`;
     }
 
+
     async function completeSale() {
         if (!checkCustomerType()) return;
         if (cart.length === 0) {
             alert('Cart is empty!');
             return;
         }
+
 
         const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
         const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
@@ -312,18 +328,365 @@
         return div.innerHTML;
     }
 
-    // Load quick products on page load
+    // Hold invoice function
+    async function holdInvoice() {
+        if (cart.length === 0) {
+            showNotification('error', 'Cart is empty!');
+            return;
+        }
+
+        const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
+        const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
+        const discountType = document.getElementById('discount_type').value;
+
+        let discount = 0;
+        if (discountType === 'percent') {
+            discount = subtotal * (discountInput / 100);
+        } else {
+            discount = discountInput;
+        }
+
+        const total = Math.max(0, subtotal - discount);
+
+        const invoiceData = {
+            action: 'save',
+            customer_name: document.getElementById('customer_name').value,
+            customer_phone: document.getElementById('customer_phone').value,
+            customer_type: customerType,
+            subtotal: subtotal,
+            discount: discount,
+            total: total,
+            cart: cart.map(item => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                base_unit: item.base_unit,
+                display_unit: item.display_unit,
+                actual_quantity: item.actual_quantity || item.quantity || 0,
+                display_quantity: item.display_quantity || item.quantity,
+                unit_price: item.unit_price || 0,
+                total_price: item.total_price || 0,
+                tier_info: item.tier_info || '',
+                max_stock: item.max_stock,
+                package_multiplier: item.package_multiplier || 1,
+                selected_package_id: item.selected_package_id
+            }))
+        };
+
+        try {
+            const response = await fetch('api/hold_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(invoiceData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('success', `Invoice held! Reference: ${result.hold_ref}`);
+                cart = [];
+                renderCart();
+                updateTotal();
+                document.getElementById('customer_name').value = '';
+                document.getElementById('customer_phone').value = '';
+                document.getElementById('customer_type').value = '';
+                document.getElementById('amount_received').value = '0';
+                document.getElementById('payment_status').style.display = 'none';
+                document.getElementById('discount_input').value = '0';
+            } else {
+                showNotification('error', result.error || 'Failed to hold invoice');
+            }
+        } catch (error) {
+            console.error('Error holding invoice:', error);
+            showNotification('error', 'Error holding invoice');
+        }
+    }
+
+    // Show held invoices
+    async function showHeldInvoices() {
+        try {
+            const response = await fetch('api/hold_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'list' })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                showNotification('error', 'Failed to load held invoices');
+                return;
+            }
+
+            const existingModal = document.getElementById('heldInvoicesModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modalHtml = `
+            <div class="modal fade" id="heldInvoicesModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title"><i class="bi bi-pause-circle"></i> Held Invoices</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${result.held_invoices.length === 0 ?
+                    '<p class="text-center text-muted py-4">No held invoices</p>' :
+                    `<div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Reference</th>
+                                                <th>Customer</th>
+                                                <th>Type</th>
+                                                <th>Items</th>
+                                                <th>Total</th>
+                                                <th>Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${result.held_invoices.map(inv => {
+                        const cartData = typeof inv.cart_data === 'string' ? JSON.parse(inv.cart_data) : inv.cart_data;
+                        return `
+                                                    <tr>
+                                                        <td><strong>${inv.hold_reference}</strong></td>
+                                                        <td>${inv.customer_name || 'Walk-in'}</td>
+                                                        <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
+                                                        <td>${cartData.length} items</td>
+                                                        <td><strong>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
+                                                        <td><small>${new Date(inv.created_at).toLocaleString()}</small></td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-success" onclick="resumeHeldInvoice(${inv.id})">
+                                                                <i class="bi bi-play-circle"></i> Resume
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="deleteHeldInvoice(${inv.id})">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                `;
+                    }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>`}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('heldInvoicesModal'));
+            modal.show();
+
+            document.getElementById('heldInvoicesModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+
+        } catch (error) {
+            console.error('Error loading held invoices:', error);
+            showNotification('error', 'Error loading held invoices');
+        }
+    }
+
+    async function resumeHeldInvoice(holdId) {
+        try {
+            const response = await fetch('api/hold_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get', hold_id: holdId })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const inv = result.invoice;
+                const cartData = typeof inv.cart_data === 'string' ? JSON.parse(inv.cart_data) : inv.cart_data;
+
+                document.getElementById('customer_name').value = inv.customer_name || '';
+                document.getElementById('customer_phone').value = inv.customer_phone || '';
+                document.getElementById('customer_type').value = inv.customer_type;
+                customerType = inv.customer_type;
+                cart = cartData;
+                document.getElementById('discount_input').value = inv.discount_amount || 0;
+                document.getElementById('discount_type').value = 'fixed';
+
+                renderCart();
+                updateTotal();
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal'));
+                if (modal) modal.hide();
+
+                showNotification('success', 'Invoice resumed!');
+            } else {
+                showNotification('error', result.error || 'Failed to resume invoice');
+            }
+        } catch (error) {
+            console.error('Error resuming invoice:', error);
+            showNotification('error', 'Error resuming invoice');
+        }
+    }
+
+    async function deleteHeldInvoice(holdId) {
+        if (!confirm('Delete this held invoice permanently?')) return;
+
+        try {
+            await fetch('api/hold_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', hold_id: holdId })
+            });
+
+            showNotification('success', 'Held invoice deleted!');
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('heldInvoicesModal'));
+            if (modal) {
+                modal.hide();
+                showHeldInvoices();
+            }
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            showNotification('error', 'Error deleting invoice');
+        }
+    }
+
+    // Load quick products grid
+    async function loadQuickProducts() {
+        const container = document.getElementById('quick_products');
+        if (!container) {
+            console.error('Quick products container not found');
+            return;
+        }
+
+        console.log('Loading quick products...');
+        container.innerHTML = '<div class="col-12 text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        try {
+            const response = await fetch('api/search_product.php?mode=popular');
+            const products = await response.json();
+
+            let html = '';
+
+            if (!products || products.length === 0) {
+                html = '<div class="col-12 text-muted text-center py-3">No products available</div>';
+            } else {
+                products.forEach(product => {
+                    if (product.status === 'active') {
+                        html += `
+                            <div class="col-3 mb-2">
+                                <button class="btn btn-outline-primary w-100 h-100" 
+                                        onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit || 'piece'}', ${product.current_stock || 0})"
+                                        style="min-height: 60px; font-size: 12px; padding: 5px;">
+                                    <strong>${escapeHtml(product.name)}</strong>
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            container.innerHTML = html;
+            console.log('Quick products loaded:', products.length);
+
+        } catch (error) {
+            console.error('Error loading quick products:', error);
+            container.innerHTML = '<div class="col-12 text-danger text-center py-3">Failed to load products</div>';
+        }
+    }
+
+    // Load customers dropdown
+    async function loadCustomers() {
+        try {
+            const response = await fetch("api/get_customers.php");
+            const customers = await response.json();
+
+            let options = '<option value="">-- Walk-in Customer --</option>';
+            if (customers && customers.length > 0) {
+                customers.forEach((customer) => {
+                    options += `<option value="${customer.id}" data-name="${customer.name.replace(/"/g, "&quot;")}" data-phone="${customer.phone || ""}" data-type="${customer.customer_type}">${customer.name} ${customer.phone ? "(" + customer.phone + ")" : ""}</option>`;
+                });
+            }
+
+            const customerSelect = document.getElementById("customer_select");
+            if (customerSelect) {
+                customerSelect.innerHTML = options;
+            }
+        } catch (error) {
+            console.error("Error loading customers:", error);
+        }
+    }
+
+    // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM loaded - initializing billing page');
+
+        // Load quick products
         loadQuickProducts();
+
+        // Load customers
         loadCustomers();
+
+        // Update total display
         updateTotal();
 
-        document.getElementById('customer_type').addEventListener('change', function () {
-            this.style.border = '';
-        });
+        // Set focus to search input
+        const searchInput = document.getElementById('search_product');
+        if (searchInput) {
+            setTimeout(function () {
+                searchInput.focus();
+            }, 500);
+        }
+    });
+    // Handle F12 key for printing/complete sale
+    document.addEventListener('keydown', function (e) {
+        // Check for F12 key
+        if (e.key === 'F12' || e.keyCode === 123) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Call the complete sale function
+            if (typeof completeSale === 'function') {
+                // Check if cart has items
+                if (cart && cart.length > 0) {
+                    // Also check if customer type is selected
+                    if (checkCustomerType()) {
+                        completeSale();
+                    }
+                } else {
+                    showNotification('error', 'Cart is empty! Add items before completing sale.');
+                }
+            } else {
+                console.error('completeSale function not found');
+                showNotification('error', 'Please use the Complete Sale button');
+            }
+            return false;
+        }
     });
 
-    // Global variables for unsaved changes warning
-    let hasUnsavedChanges = false;
+    // Also add Ctrl+P as alternative (standard print shortcut)
+    document.addEventListener('keydown', function (e) {
+        // Check for Ctrl+P (or Cmd+P on Mac)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (typeof completeSale === 'function') {
+                if (cart && cart.length > 0) {
+                    if (checkCustomerType()) {
+                        completeSale();
+                    }
+                } else {
+                    showNotification('error', 'Cart is empty! Add items before completing sale.');
+                }
+            }
+            return false;
+        }
+    });
+
 
 </script>

@@ -4,6 +4,7 @@ checkAuth();
 header('Content-Type: application/json');
 
 try {
+    // Regular product addition only (no more temp_product)
     $code = $_POST['code'] ?? '';
     $name = trim($_POST['name'] ?? '');
     $category = $_POST['category'] ?: null;
@@ -32,6 +33,7 @@ try {
         $stmt->execute([$category]);
     }
 
+    // Check if product with same name exists
     $stmt = $pdo->prepare("SELECT id FROM products WHERE name = ?");
     $stmt->execute([$name]);
     $existing = $stmt->fetch();
@@ -42,6 +44,7 @@ try {
         exit;
     }
 
+    // Insert product as regular product (not temporary)
     $stmt = $pdo->prepare("
         INSERT INTO products (code, name, description, category, unit, 
                             current_stock, min_stock_alert, purchase_price, status) 
@@ -77,7 +80,8 @@ try {
     ]);
 
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if (isset($pdo))
+        $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

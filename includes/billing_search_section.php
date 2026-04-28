@@ -13,7 +13,8 @@
             </button>
         </div>
         <div id="search_results" class="list-group" style="max-height: 200px; overflow-y: auto;"></div>
-        <!-- Quick Add New Product Section (shown when no results) -->
+
+        <!-- Quick Add New Product Section -->
         <div id="quick_add_section" style="display: none;" class="mt-3">
             <div class="alert alert-info" id="quick_add_alert">
                 <i class="bi bi-info-circle"></i> Product not found? Add a new one:
@@ -45,13 +46,7 @@
                     <input type="number" id="quick_quantity" class="form-control" placeholder="Quantity to Add"
                         value="1" step="any">
                 </div>
-                <div class="col-md-6 mb-2">
-                    <button class="btn btn-success w-100" onclick="addToCartOnly(event)">
-                        <i class="bi bi-cart-plus"></i> Add to Cart Only
-                    </button>
-                    <small class="text-muted">Adds to cart without saving to product list</small>
-                </div>
-                <div class="col-md-6 mb-2">
+                <div class="col-md-12 mb-2">
                     <button class="btn btn-primary w-100" onclick="addToProductListAndCart(event)">
                         <i class="bi bi-database-add"></i> Save to Products & Add to Cart
                     </button>

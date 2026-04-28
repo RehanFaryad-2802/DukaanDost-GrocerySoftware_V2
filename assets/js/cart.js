@@ -44,16 +44,13 @@ async function renderCart() {
             item.packages = await getProductPackages(item.product_id);
         }
 
-        // Display quantity is always the number the user sees (package count)
-        const displayQty = item.display_quantity || item.actual_quantity || 0;
-        const displayUnit = item.display_unit || item.base_unit || 'Piece';
+        let displayQty = item.display_quantity || item.actual_quantity || 0;
+        displayQty = parseFloat(displayQty) || 0;
 
-        // Unit price is per base unit (e.g., per kg)
+        const displayUnit = item.display_unit || item.base_unit || 'Piece';
         const unitPrice = (item.unit_price || 0).toFixed(2);
-        // Total is based on actual base quantity
         const totalPrice = (item.total_price || 0).toFixed(2);
 
-        // Format quantity display
         let qtyValue = displayQty;
         if (Math.floor(displayQty) === displayQty) {
             qtyValue = displayQty;
@@ -61,7 +58,6 @@ async function renderCart() {
             qtyValue = displayQty.toFixed(3);
         }
 
-        // Build package dropdown options - only show package name
         let packageOptions = `<option value="base" data-multiplier="1" data-is-package="false">${item.base_unit}</option>`;
         if (item.packages && item.packages.length > 0) {
             item.packages.forEach(pkg => {
@@ -130,36 +126,27 @@ async function changePackage(index, selectedValue, selectedOption) {
 
     const isPackage = selectedOption.getAttribute('data-is-package') === 'true';
     const multiplier = parseFloat(selectedOption.getAttribute('data-multiplier') || 1);
-    const oldMultiplier = item.package_multiplier || 1;
 
-    // Store the current display quantity (the number the user sees)
-    const currentDisplayQty = item.display_quantity;
+    let currentDisplayQty = item.display_quantity;
+    currentDisplayQty = parseFloat(currentDisplayQty) || 1;
 
     if (!isPackage) {
-        // Switching back to base unit
         item.display_unit = item.base_unit;
         item.package_multiplier = 1;
         item.selected_package_id = null;
-        // Display quantity stays the SAME number
-        // Actual quantity in base units = display_qty × multiplier (multiplier is now 1)
         item.actual_quantity = currentDisplayQty;
         item.display_quantity = currentDisplayQty;
     } else {
-        // Switching to a package
         const packageId = selectedValue;
         const packageName = selectedOption.getAttribute('data-name');
 
-        // Store package info
         item.selected_package_id = parseInt(packageId);
         item.display_unit = packageName;
         item.package_multiplier = multiplier;
-        // Display quantity stays the SAME number
-        // Actual quantity in base units = display_qty × multiplier
         item.actual_quantity = currentDisplayQty * multiplier;
         item.display_quantity = currentDisplayQty;
     }
 
-    // Recalculate price based on actual quantity (in base units)
     const formData = new FormData();
     formData.append('product_id', item.product_id);
     formData.append('quantity', item.actual_quantity);
@@ -184,7 +171,9 @@ async function changePackage(index, selectedValue, selectedOption) {
     updateTotal();
 
     const unitName = isPackage ? selectedOption.getAttribute('data-name') : item.base_unit;
-    showNotification('success', `Changed to ${unitName} - Price updated`);
+    if (typeof showNotification === 'function') {
+        showNotification('success', `Changed to ${unitName} - Price updated`);
+    }
 }
 
 // Update quantity - User changes the quantity number
@@ -198,8 +187,6 @@ async function updateCartItemQuantity(index, newDisplayQty) {
         return;
     }
 
-    // Calculate actual quantity in base units
-    // actual = display_qty × package_multiplier
     let actualNewQty = newDisplayQty * (item.package_multiplier || 1);
 
     if (actualNewQty > item.max_stock) {
@@ -208,11 +195,9 @@ async function updateCartItemQuantity(index, newDisplayQty) {
         return;
     }
 
-    // Update quantities
     item.display_quantity = newDisplayQty;
     item.actual_quantity = actualNewQty;
 
-    // Recalculate price based on actual quantity
     const formData = new FormData();
     formData.append('product_id', item.product_id);
     formData.append('quantity', actualNewQty);
@@ -253,16 +238,15 @@ async function updateCartItemUnitPrice(index, newUnitPrice) {
     }
 
     const actualQuantity = item.actual_quantity || 1;
-
-    // Update unit price (price per base unit)
     item.unit_price = newUnitPrice;
-    // Recalculate total = unit price × actual quantity
     item.total_price = newUnitPrice * actualQuantity;
 
     renderCart();
     updateTotal();
 
-    showNotification('success', `Unit price changed to Rs. ${newUnitPrice.toFixed(2)}`);
+    if (typeof showNotification === 'function') {
+        showNotification('success', `Unit price changed to Rs. ${newUnitPrice.toFixed(2)}`);
+    }
 }
 
 // ADMIN ONLY: Update total - auto-calculates quantity
@@ -286,10 +270,8 @@ async function updateCartItemTotal(index, newTotal) {
         return;
     }
 
-    // Auto-calculate actual quantity in base units = total ÷ unit price
     let actualNewQty = newTotal / unitPrice;
 
-    // Round appropriately
     const baseUnit = item.base_unit || 'Piece';
     const discreteUnits = ['piece', 'Piece', 'packet', 'dozen', 'box', 'bottle', 'can'];
 
@@ -311,12 +293,8 @@ async function updateCartItemTotal(index, newTotal) {
         return;
     }
 
-    // Update actual quantity
     item.actual_quantity = actualNewQty;
     item.total_price = newTotal;
-
-    // Update display quantity based on selected package
-    // display_qty = actual_qty ÷ package_multiplier
     item.display_quantity = actualNewQty / (item.package_multiplier || 1);
 
     renderCart();
@@ -328,7 +306,9 @@ async function updateCartItemTotal(index, newTotal) {
     } else {
         qtyDisplay = qtyDisplay.toFixed(3);
     }
-    showNotification('success', `Total set to Rs. ${newTotal.toFixed(2)} → Quantity: ${qtyDisplay} ${item.display_unit}`);
+    if (typeof showNotification === 'function') {
+        showNotification('success', `Total set to Rs. ${newTotal.toFixed(2)} → Quantity: ${qtyDisplay} ${item.display_unit}`);
+    }
 }
 
 function removeFromCart(index) {
@@ -348,6 +328,7 @@ function escapeHtml(text) {
 // Show notification function
 if (typeof showNotification !== 'function') {
     window.showNotification = function (type, message) {
+        console.log(`[${type}] ${message}`);
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
         alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';

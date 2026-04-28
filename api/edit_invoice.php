@@ -82,16 +82,21 @@ if ($action === 'get_invoice') {
 
         $new_invoice_id = $pdo->lastInsertId();
 
-        // Insert items and update stock
+        // Find this section in edit_invoice.php and update:
+
         foreach ($data['items'] as $item) {
             // Insert invoice item
             $stmt = $pdo->prepare("
-                INSERT INTO invoice_items (invoice_id, product_id, product_name, quantity, unit_price, total_price, tier_info)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
+        INSERT INTO invoice_items (invoice_id, product_id, product_name, quantity, unit_price, total_price, tier_info)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+
+            $product_id = intval($item['product_id'] ?? 0);
+            $final_product_id = ($product_id > 0) ? $product_id : null;
+
             $stmt->execute([
                 $new_invoice_id,
-                $item['product_id'],
+                $final_product_id,
                 $item['product_name'],
                 $item['quantity'],
                 $item['unit_price'],
@@ -99,9 +104,11 @@ if ($action === 'get_invoice') {
                 $item['tier_info'] ?? null
             ]);
 
-            // Update stock
-            $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
-            $stmt->execute([$item['quantity'], $item['product_id']]);
+            // Update stock only for real products
+            if ($final_product_id !== null) {
+                $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
+                $stmt->execute([$item['quantity'], $final_product_id]);
+            }
         }
 
         // Mark old invoice as edited

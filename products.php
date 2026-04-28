@@ -126,7 +126,7 @@ if (isset($_GET['delete'])) {
 $category_filter = $_GET['category'] ?? '';
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT * FROM products WHERE 1=1";
+$sql = "SELECT * FROM products WHERE is_hidden = 0 AND 1=1";
 $params = [];
 
 if ($category_filter) {

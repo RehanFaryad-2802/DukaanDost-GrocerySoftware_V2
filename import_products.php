@@ -186,8 +186,8 @@ if ($step == 2 && isset($_POST['confirm_import'])) {
                 <hr>
                 <h6>Expected CSV Format:</h6>
                 <pre class="bg-light p-3 rounded">Name,Code,Category,Unit,Description,Purchase Price,Retail Price,Wholesale Price,Stock
-        Sugar,SUG001,Groceries,kg,Premium Sugar,130,150,140,999999
-        Rice,RIC001,Groceries,kg,Basmati Rice,180,200,190,999999</pre>
+            Sugar,SUG001,Groceries,kg,Premium Sugar,130,150,140,999999
+            Rice,RIC001,Groceries,kg,Basmati Rice,180,200,190,999999</pre>
 
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary">

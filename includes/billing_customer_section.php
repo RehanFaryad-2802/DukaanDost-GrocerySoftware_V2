@@ -17,20 +17,20 @@
                     <option value="">-- Walk-in Customer --</option>
                 </select>
                 <small class="text-muted">
-                    <a href="customers.php" target="_blank">Manage Customers</a>
+                    <a href="customers.php">Manage Customers</a>
                 </small>
             </div>
             <div class="col-md-5">
                 <div class="row">
                     <div class="col-md-7">
                         <label>Customer Name</label>
-                        <input type="text" id="customer_name" class="form-control"
-                            placeholder="Walk-in customer" readonly style="background-color: #f8f9fa;">
+                        <input type="text" id="customer_name" class="form-control" placeholder="Walk-in customer"
+                            readonly style="background-color: #f8f9fa;">
                     </div>
                     <div class="col-md-5">
                         <label>Phone</label>
-                        <input type="text" id="customer_phone" class="form-control" placeholder="Optional"
-                            readonly style="background-color: #f8f9fa;">
+                        <input type="text" id="customer_phone" class="form-control" placeholder="Optional" readonly
+                            style="background-color: #f8f9fa;">
                     </div>
                 </div>
             </div>

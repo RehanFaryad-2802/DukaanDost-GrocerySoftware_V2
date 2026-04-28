@@ -49,6 +49,7 @@ try {
     $invoice_id = $pdo->lastInsertId();
 
     foreach ($items as $item) {
+        $product_id = intval($item['product_id'] ?? 0);
         $product_name = $item['product_name'] ?? '';
         $quantity = floatval($item['actual_quantity'] ?? $item['quantity'] ?? 0);
         $unit_price = floatval($item['unit_price'] ?? 0);
@@ -57,15 +58,17 @@ try {
         $display_unit = $item['display_unit'] ?? null;
         $display_quantity = $item['display_quantity'] ?? null;
 
+        // Insert invoice item
         $stmt = $pdo->prepare("
-        INSERT INTO invoice_items (invoice_id, product_id, product_name, 
-                                 quantity, unit_price, total_price, tier_info,
-                                 display_unit, display_quantity)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
+            INSERT INTO invoice_items (invoice_id, product_id, product_name, 
+                                     quantity, unit_price, total_price, tier_info,
+                                     display_unit, display_quantity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
         $stmt->execute([
             $invoice_id,
-            $product_id,
+            $product_id > 0 ? $product_id : null,
             $product_name,
             $quantity,
             $unit_price,
@@ -75,9 +78,11 @@ try {
             $display_quantity
         ]);
 
-        // Update stock
-        $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
-        $stmt->execute([$quantity, $product_id]);
+        // Update stock only (skip stock_movements to avoid errors)
+        if ($product_id > 0) {
+            $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
+            $stmt->execute([$quantity, $product_id]);
+        }
     }
 
     $pdo->commit();
