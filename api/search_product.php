@@ -6,9 +6,9 @@ $mode = $_GET['mode'] ?? 'search';
 $search = $_GET['q'] ?? '';
 $customer_type = $_GET['customer_type'] ?? 'retail';
 
-// Popular products mode (for Quick Products)
+// Popular products mode (for Quick Products) - Get top selling products
 if ($mode === 'popular') {
-    // Get all active products (not just those with sales)
+    // Get top 20 most sold products based on invoice items
     $stmt = $pdo->prepare("
         SELECT 
             p.id, 
@@ -18,11 +18,13 @@ if ($mode === 'popular') {
             p.current_stock, 
             p.purchase_price,
             p.status,
-            0 as sales_count
+            COALESCE(SUM(ii.quantity), 0) as total_sold
         FROM products p
+        LEFT JOIN invoice_items ii ON p.id = ii.product_id
         WHERE p.status = 'active' AND p.current_stock > 0
-        ORDER BY p.name ASC
-        LIMIT 36
+        GROUP BY p.id
+        ORDER BY total_sold DESC, p.name ASC
+        LIMIT 20
     ");
     $stmt->execute();
     $products = $stmt->fetchAll();

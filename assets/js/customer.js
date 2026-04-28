@@ -14,6 +14,82 @@ async function loadCustomers() {
   }
 }
 
+// ADD THIS MISSING FUNCTION
+function updatePricingNote() {
+  const type = document.getElementById('customer_type').value;
+  const note = document.getElementById('pricing_note');
+
+  if (!note) return;
+
+  if (type === 'wholesale') {
+    note.innerHTML = '📦 Wholesale pricing applied';
+    note.className = 'text-primary';
+  } else if (type === 'retail') {
+    note.innerHTML = '🛒 Retail pricing applied';
+    note.className = 'text-success';
+  } else {
+    note.innerHTML = '⚠️ Please select Retail or Wholesale';
+    note.className = 'text-danger';
+  }
+}
+
+// ADD THIS MISSING FUNCTION
+async function recalculateCartPrices() {
+  if (!cart || cart.length === 0) return;
+
+  for (let item of cart) {
+    if (!item || !item.product_id) continue;
+
+    const actualQty = item.actual_quantity || item.quantity || 0;
+    const productId = item.product_id;
+
+    if (productId <= 0 || actualQty <= 0) continue;
+
+    let correctBaseUnit = item.base_unit || 'Piece';
+    try {
+      const response = await fetch(`api/get_product.php?id=${productId}`);
+      const product = await response.json();
+      correctBaseUnit = product.unit || 'Piece';
+    } catch (e) {
+      console.error('Failed to fetch product unit:', e);
+    }
+
+    const savedDisplayUnit = item.display_unit || correctBaseUnit;
+    const savedDisplayQty = item.display_quantity || actualQty;
+
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('quantity', actualQty);
+    formData.append('customer_type', customerType);
+
+    try {
+      const response = await fetch('api/get_price.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      const text = await response.text();
+      if (text.startsWith('<')) continue;
+
+      const priceData = JSON.parse(text);
+
+      item.unit_price = priceData.unit_price || 0;
+      item.total_price = priceData.total_price || 0;
+      item.tier_info = priceData.tier_info || '';
+
+      item.base_unit = correctBaseUnit;
+      item.display_unit = savedDisplayUnit;
+      item.display_quantity = savedDisplayQty;
+
+    } catch (error) {
+      console.error('Recalculate error:', error);
+    }
+  }
+
+  if (typeof renderCart === 'function') renderCart();
+  if (typeof updateTotal === 'function') updateTotal();
+}
+
 function onCustomerSelect(customerId) {
   if (!customerId) {
     document.getElementById("customer_name").value = "";
@@ -45,7 +121,7 @@ function onCustomerSelect(customerId) {
   customerType = type;
   updatePricingNote();
 
-  if (cart.length > 0) {
+  if (cart && cart.length > 0) {
     recalculateCartPrices();
   }
 }
@@ -109,11 +185,15 @@ function selectCustomer(id, name, phone, type) {
   document.getElementById("customer_results").innerHTML = "";
   document.getElementById("customer_results").style.display = "none";
 
-  if (cart.length > 0) {
+  if (cart && cart.length > 0) {
     recalculateCartPrices();
   }
 
-  showNotification("success", `Customer: ${name} selected`);
+  if (typeof showNotification === 'function') {
+    showNotification("success", `Customer: ${name} selected`);
+  } else {
+    console.log(`Customer: ${name} selected`);
+  }
 }
 
 function clearCustomerSearch() {

@@ -36,6 +36,7 @@ if ($edit_mode > 0) {
         background-color: #0d6efd !important;
         color: white !important;
     }
+
     .search-result-item.selected small {
         color: rgba(255, 255, 255, 0.8) !important;
     }
@@ -43,8 +44,6 @@ if ($edit_mode > 0) {
 
 <div class="row">
     <div class="col-md-8">
-        <!-- Customer Details -->
-        <?php include 'includes/billing_customer_section.php'; ?>
 
         <!-- Product Search -->
         <?php include 'includes/billing_search_section.php'; ?>
@@ -56,8 +55,10 @@ if ($edit_mode > 0) {
         <?php include 'includes/billing_cart_table.php'; ?>
     </div>
 
-    <!-- Bill Summary Sidebar -->
-    <?php include 'includes/billing_summary.php'; ?>
+    <div class="col-md-4">
+        <?php include 'includes/billing_customer_section.php'; ?>
+        <?php include 'includes/billing_summary.php'; ?>
+    </div>
 </div>
 
 <!-- Voice Input Modal -->

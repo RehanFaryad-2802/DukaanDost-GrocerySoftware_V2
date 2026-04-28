@@ -472,7 +472,7 @@
                 products.forEach(product => {
                     if (product.status === 'active') {
                         html += `
-                            <div class="col-3 mb-2">
+                            <div class="col-2 mb-2">
                                 <button class="btn btn-outline-primary w-100 h-100" 
                                         onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit}', ${product.current_stock})"
                                         style="min-height: 60px;">

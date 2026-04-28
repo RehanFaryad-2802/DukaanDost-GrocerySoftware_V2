@@ -35,7 +35,11 @@
     }
 
     function calculateChange() {
-        const total = getGrandTotal();
+        const totalElement = document.getElementById('grand_total');
+        if (!totalElement) return;
+
+        const totalText = totalElement.textContent;
+        const total = parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
         const received = parseFloat(document.getElementById('amount_received').value) || 0;
 
         const statusDiv = document.getElementById('payment_status');
@@ -43,10 +47,14 @@
         const balanceAmount = document.getElementById('balance_amount');
         const completeBtn = document.getElementById('completeSaleBtn');
 
+        if (!statusDiv) return;
+
         if (received <= 0) {
             statusDiv.style.display = 'none';
-            completeBtn.disabled = false;
-            completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Sale (F12)';
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Sale (F12)';
+            }
             return;
         }
 
@@ -59,8 +67,10 @@
             statusLabel.className = 'text-success';
             balanceAmount.textContent = `Rs. ${change.toFixed(0)}`;
             balanceAmount.className = 'fw-bold fs-5 text-success';
-            completeBtn.disabled = false;
-            completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Sale (F12)';
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Sale (F12)';
+            }
         } else {
             const due = total - received;
             statusDiv.className = 'alert alert-danger mb-3';
@@ -68,11 +78,12 @@
             statusLabel.className = 'text-danger';
             balanceAmount.textContent = `Rs. ${due.toFixed(0)}`;
             balanceAmount.className = 'fw-bold fs-5 text-danger';
-            completeBtn.disabled = true;
-            completeBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Payment';
+            if (completeBtn) {
+                completeBtn.disabled = true;
+                completeBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Payment';
+            }
         }
     }
-
     async function changePackage(index, packageId) {
         if (!packageId) return;
 
@@ -104,13 +115,20 @@
         }
     }
 
+    // Add this function near the top of billing_js_core.php
     function getGrandTotal() {
-        const totalText = document.getElementById('grand_total').textContent;
+        const totalElement = document.getElementById('grand_total');
+        if (!totalElement) return 0;
+        const totalText = totalElement.textContent;
         return parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
     }
 
     function setReceivedAmount(type, value = 0) {
-        const total = getGrandTotal();
+        const totalElement = document.getElementById('grand_total');
+        if (!totalElement) return;
+
+        const totalText = totalElement.textContent;
+        const total = parseFloat(totalText.replace('Rs.', '').replace(',', '').trim()) || 0;
         const receivedInput = document.getElementById('amount_received');
 
         if (type === 'exact') {
@@ -221,36 +239,71 @@
         document.getElementById('grand_total').textContent = `Rs. ${total.toFixed(2)}`;
     }
 
-
     async function completeSale() {
-        if (!checkCustomerType()) return;
-        if (cart.length === 0) {
+        // Check if customer type is selected
+        const customerTypeSelect = document.getElementById('customer_type');
+        if (!customerTypeSelect) {
+            console.error('Customer type select element not found');
+            alert('Error: Customer type selector missing. Please refresh the page.');
+            return;
+        }
+
+        const selectedCustomerType = customerTypeSelect.value;
+        if (!selectedCustomerType) {
+            alert('⚠️ Please select Customer Type (Retail or Wholesale) before completing the sale!');
+            customerTypeSelect.focus();
+            customerTypeSelect.style.border = '2px solid red';
+            return;
+        }
+        customerTypeSelect.style.border = '';
+
+        if (!cart || cart.length === 0) {
             alert('Cart is empty!');
             return;
         }
 
-
+        // Calculate totals
         const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
-        const discountInput = parseFloat(document.getElementById('discount_input').value) || 0;
-        const discountType = document.getElementById('discount_type').value;
+        const discountInput = document.getElementById('discount_input');
+        const discountTypeSelect = document.getElementById('discount_type');
+
+        if (!discountInput || !discountTypeSelect) {
+            console.error('Discount elements not found');
+            alert('Error: Discount elements missing. Please refresh the page.');
+            return;
+        }
+
+        const discountInputValue = parseFloat(discountInput.value) || 0;
+        const discountType = discountTypeSelect.value;
 
         let discount = 0;
         if (discountType === 'percent') {
-            discount = subtotal * (discountInput / 100);
+            discount = subtotal * (discountInputValue / 100);
         } else {
-            discount = discountInput;
+            discount = discountInputValue;
         }
 
         const total = Math.max(0, subtotal - discount);
 
+        // Get customer info with null checks
+        const customerName = document.getElementById('customer_name');
+        const customerPhone = document.getElementById('customer_phone');
+        const paymentMethod = document.getElementById('payment_method');
+
+        if (!customerName || !customerPhone || !paymentMethod) {
+            console.error('Customer or payment elements not found');
+            alert('Error: Form elements missing. Please refresh the page.');
+            return;
+        }
+
         const invoiceData = {
-            customer_name: document.getElementById('customer_name').value,
-            customer_phone: document.getElementById('customer_phone').value,
-            customer_type: customerType,
+            customer_name: customerName.value || '',
+            customer_phone: customerPhone.value || '',
+            customer_type: selectedCustomerType,
             subtotal: subtotal,
             discount: discount,
             total: total,
-            payment_method: document.getElementById('payment_method').value,
+            payment_method: paymentMethod.value || 'cash',
             items: cart.map(item => ({
                 product_id: item.product_id,
                 product_name: item.product_name,
@@ -263,34 +316,62 @@
             }))
         };
 
-        const response = await fetch('api/save_invoice.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(invoiceData)
-        });
+        // Show loading state on button
+        const completeBtn = document.getElementById('completeSaleBtn');
+        const originalBtnHtml = completeBtn ? completeBtn.innerHTML : '';
+        if (completeBtn) {
+            completeBtn.disabled = true;
+            completeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+        }
 
-        const result = await response.json();
+        try {
+            const response = await fetch('api/save_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(invoiceData)
+            });
 
-        if (result.success) {
-            window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
+            const result = await response.json();
 
-            cart = [];
-            renderCart();
-            updateTotal();
-            customerType = '';
-            document.getElementById('customer_type').value = '';
-            document.getElementById('customer_name').value = '';
-            document.getElementById('customer_phone').value = '';
-            document.getElementById('amount_received').value = '0';
-            document.getElementById('payment_status').style.display = 'none';
-            document.getElementById('discount_input').value = '0';
+            if (result.success) {
+                // Open print window
+                window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
 
-            showNotification('success', `Invoice ${result.invoice_no} completed!`);
-        } else {
-            alert('Error: ' + (result.error || 'Unknown error'));
+                // Reset cart and form
+                cart = [];
+                if (typeof renderCart === 'function') renderCart();
+                if (typeof updateTotal === 'function') updateTotal();
+
+                // Reset customer fields
+                customerTypeSelect.value = '';
+                customerName.value = '';
+                customerPhone.value = '';
+
+                const amountReceived = document.getElementById('amount_received');
+                const paymentStatus = document.getElementById('payment_status');
+                if (amountReceived) amountReceived.value = '0';
+                if (paymentStatus) paymentStatus.style.display = 'none';
+                if (discountInput) discountInput.value = '0';
+
+                if (typeof showNotification === 'function') {
+                    showNotification('success', `Invoice ${result.invoice_no} completed!`);
+                } else {
+                    alert(`Invoice ${result.invoice_no} completed!`);
+                }
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Complete sale error:', error);
+            alert('Error completing sale: ' + error.message);
+        } finally {
+            // Restore button
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.innerHTML = originalBtnHtml;
+            }
         }
     }
-
     function clearCart() {
         if (confirm('Clear all items from cart?')) {
             cart = [];
@@ -578,7 +659,7 @@
                 products.forEach(product => {
                     if (product.status === 'active') {
                         html += `
-                            <div class="col-3 mb-2">
+                            <div class="col-6 mb-3">
                                 <button class="btn btn-outline-primary w-100 h-100" 
                                         onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit || 'piece'}', ${product.current_stock || 0})"
                                         style="min-height: 60px; font-size: 12px; padding: 5px;">

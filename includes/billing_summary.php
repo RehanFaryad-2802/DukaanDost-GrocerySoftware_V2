@@ -1,5 +1,5 @@
 <!-- Bill Summary -->
-<div class="col-md-4">
+<div class="col-md-12">
     <div class="card sticky-top" style="top: 20px;">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0">Bill Summary</h5>
@@ -7,11 +7,11 @@
 
         <div class="card-body">
             <table class="table table-sm">
-                <tr>
+                <tr style="display: none;">
                     <td>Subtotal:</td>
                     <td class="text-end"><span id="subtotal">0.00</span></td>
                 </tr>
-                <tr>
+                <tr style="display: none;">
                     <td>Discount:</td>
                     <td class="text-end">
                         <input type="number" id="discount_input" class="form-control form-control-sm d-inline-block"
@@ -58,8 +58,7 @@
             <div class="mb-3">
                 <label class="form-label small text-muted">Quick Amount</label>
                 <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-secondary btn-sm"
-                        onclick="setReceivedAmount('exact')">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setReceivedAmount('exact')">
                         Exact
                     </button>
                 </div>
