@@ -2,7 +2,7 @@
 <div class="card">
     <div class="card-header bg-primary text-white">
         <i class="bi bi-cart"></i> Current Bill Items
-        <span class="badge bg-light text-dark" id="cart_item_count">(renderCart)</span>
+        <span class="badge bg-light text-dark" id="cart_item_count">(0)</span>
     </div>
     <div class="card-body p-0">
         <table class="table table-striped mb-0">

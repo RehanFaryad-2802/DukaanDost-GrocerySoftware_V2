@@ -1,5 +1,5 @@
 <!-- Bill Summary -->
-<div class="col-md-12">
+<div class="col-md-12 position-relative">
     <div class="card sticky-top" style="top: 20px;">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0">Bill Summary</h5>
@@ -66,7 +66,7 @@
 
             <hr>
 
-            <div class="mb-3">
+            <div class="mb-3 position-absolute" style="opacity: 0">
                 <label>Payment Method</label>
                 <select id="payment_method" class="form-select">
                     <option value="cash">Cash</option>

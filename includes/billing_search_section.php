@@ -2,8 +2,9 @@
 <div class="card mb-3">
     <div class="p-2">
         <div class="input-group mb-3">
-            <input dir="rtl" type="text" id="search_product" data-voice="true" class="form-control form-control-lg"
-                placeholder="تلاش کریں۔۔۔" oninput="handleSearchInput(this.value)" autofocus>
+            <input autocomplete="off" dir="rtl" type="text" id="search_product" data-voice="true"
+                class="form-control form-control-lg" placeholder="تلاش کریں۔۔۔" oninput="handleSearchInput(this.value)"
+                autofocus>
             <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                 <i class="bi bi-x"></i>
             </button>

@@ -336,7 +336,7 @@ if (isset($_GET['view']) && $_GET['view'] == 'categories') {
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Product Name *</label>
-                                <input type="text" name="name" class="form-control" required>
+                                <input data-voice="true" type="text" name="name " class="form-control" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Category</label>
