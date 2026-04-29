@@ -562,4 +562,116 @@
             if (index === selectedResultIndex) item.scrollIntoView({ block: 'nearest' });
         });
     }
+    // ===============================================
+    // GLOBAL TYPING DETECTION - Auto focus search input
+    // ===============================================
+
+    let typingBuffer = '';
+    let typingTimeout = null;
+    let typingActive = false;
+
+    // Check if user is typing in an input or textarea
+    function isTypingInInput() {
+        const activeElement = document.activeElement;
+        const tagName = activeElement.tagName.toLowerCase();
+        const isInput = tagName === 'input' || tagName === 'textarea';
+        const isContentEditable = activeElement.isContentEditable;
+
+        // Also check if any modal is open
+        const modalOpen = document.querySelector('.modal.show');
+
+        return (isInput || isContentEditable) && !modalOpen;
+    }
+
+    // Auto-focus search input when user starts typing
+    function handleGlobalTyping(e) {
+        // Ignore if typing in any input/textarea
+        if (isTypingInInput()) {
+            return;
+        }
+
+        // Ignore modifier keys
+        const modifiers = ['Shift', 'Ctrl', 'Alt', 'Meta', 'Control', 'AltGraph', 'CapsLock', 'NumLock', 'ScrollLock'];
+        if (modifiers.includes(e.key)) {
+            return;
+        }
+
+        // Ignore function keys
+        if (e.key.startsWith('F') && e.key.length === 2) {
+            return;
+        }
+
+        // Ignore arrow keys, home, end, page up/down
+        const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+        if (navigationKeys.includes(e.key)) {
+            return;
+        }
+
+        // Ignore Enter, Tab, Escape
+        const actionKeys = ['Enter', 'Tab', 'Escape', 'Delete', 'Insert'];
+        if (actionKeys.includes(e.key)) {
+            return;
+        }
+
+        // Don't auto-focus if search already has focus
+        const searchInput = document.getElementById('search_product');
+        if (document.activeElement === searchInput) {
+            return;
+        }
+
+        // Don't auto-focus if voice modal is open
+        const voiceModal = document.getElementById('voiceModal');
+        if (voiceModal && voiceModal.classList.contains('show')) {
+            return;
+        }
+
+        // Get the typed character
+        let typedChar = e.key;
+        if (typedChar && typedChar.length === 1) {
+            e.preventDefault(); // Prevent default to avoid typing elsewhere
+
+            // Focus the search input
+            if (searchInput) {
+                searchInput.focus();
+
+                // Append to existing value or start new
+                if (typingActive) {
+                    searchInput.value += typedChar;
+                } else {
+                    searchInput.value = typedChar;
+                    typingActive = true;
+                }
+
+                // Trigger search
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                // Reset typing buffer after inactivity
+                if (typingTimeout) clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    typingActive = false;
+                    typingBuffer = '';
+                }, 2000);
+            }
+        }
+    }
+
+    // Add global keyboard listener
+    document.addEventListener('keydown', handleGlobalTyping);
+
+    // Also handle paste event for better UX
+    document.addEventListener('paste', function (e) {
+        // Only handle if not already in an input
+        if (!isTypingInInput()) {
+            const searchInput = document.getElementById('search_product');
+            if (searchInput && document.activeElement !== searchInput) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                searchInput.focus();
+                searchInput.value = pastedText;
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+    });
+
+    console.log('Global typing detector active - Start typing anywhere to focus search');
 </script>

@@ -1,11 +1,12 @@
 // ===============================================
-// Voice Input - Auto-start on focus, stop on blur
+// Voice Input - Auto-start on focus, stop on typing
 // ===============================================
 
 (function () {
     // Active recognition instance
     let activeRecognition = null;
     let activeInput = null;
+    let isTypingManually = false;
 
     // Add CSS
     function addStyles() {
@@ -127,7 +128,7 @@
     }
 
     // Stop current listening
-    function stopListening() {
+    function stopListening(reason = '') {
         if (activeRecognition) {
             try {
                 activeRecognition.abort();
@@ -142,14 +143,28 @@
                 const micBtn = wrapper.querySelector('.voice-mic-btn');
                 if (micBtn) micBtn.classList.remove('listening');
             }
+
+            // Reset placeholder
+            if (activeInput.placeholder != 'تلاش کریں...') {
+                activeInput.placeholder = 'تلاش کریں...';
+            }
+
+            if (reason) {
+                console.log(`Voice stopped: ${reason}`);
+            }
+
             activeInput = null;
         }
+        isTypingManually = false;
     }
 
     // Start listening for an input
     function startListening(input, micBtn) {
-        // Stop any existing listening
-        stopListening();
+        // Stop any existing listening first
+        stopListening('New request');
+
+        // Reset typing flag
+        isTypingManually = false;
 
         // Check speech recognition support
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -171,10 +186,17 @@
         activeRecognition.maxAlternatives = 1;
 
         activeRecognition.onstart = function () {
-            input.placeholder = 'بولیں۔۔۔';
+            input.placeholder = 'بولیں...';
+            showToast('بولیں...', 'info');
         };
 
         activeRecognition.onresult = function (event) {
+            // If user started typing, ignore voice results
+            if (isTypingManually) {
+                console.log('Ignoring voice result - user is typing');
+                return;
+            }
+
             let interim = '';
             let final = '';
 
@@ -187,44 +209,37 @@
                 }
             }
 
-            if (interim) {
+            if (interim && !isTypingManually) {
                 input.value = interim;
-                input.placeholder = '<i class="bi bi-mic"></i> ' + interim + ' (speaking...)';
+                input.placeholder = '🎤 ' + interim + ' (speaking...)';
             }
 
-            if (final) {
+            if (final && !isTypingManually) {
                 input.value = final;
                 input.placeholder = '';
                 showToast(`✅ "${final}" added`, 'success');
 
-                // Trigger events
+                // Trigger events for search
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
 
                 // Auto-stop after successful input
-                stopListening();
+                stopListening('Voice input complete');
             }
         };
 
         activeRecognition.onerror = function (event) {
             let msg = 'Voice error';
-            if (event.error === 'no-speech') msg = 'No speech detected';
+            if (event.error === 'no-speech') msg = 'No speech detected - click mic and speak again';
             else if (event.error === 'not-allowed') msg = 'Microphone permission denied';
             else if (event.error === 'aborted') return; // User stopped
             showToast(msg, 'error');
-            stopListening();
+            stopListening('Error: ' + event.error);
         };
 
         activeRecognition.onend = function () {
-            if (activeInput === input) {
-                // Only clear if this is still the active input
-                input.classList.remove('voice-input-listening');
-                if (micBtn) micBtn.classList.remove('listening');
-                if (input.placeholder === 'بولیں۔۔۔') {
-                    input.placeholder = '';
-                }
-                activeRecognition = null;
-                activeInput = null;
+            if (activeInput === input && !isTypingManually) {
+                stopListening('Recognition ended');
             }
         };
 
@@ -252,12 +267,12 @@
         input.parentNode.insertBefore(wrapper, input);
         wrapper.appendChild(input);
 
-        // Create mic button (visual only, not for clicking - focus triggers listening)
+        // Create mic button
         const micBtn = document.createElement('button');
         micBtn.type = 'button';
         micBtn.className = 'voice-mic-btn';
         micBtn.innerHTML = '<i class="bi bi-mic"></i>';
-        micBtn.title = 'Focus on this field and speak';
+        micBtn.title = 'Click to speak';
         micBtn.style.cssText = `
             position: absolute;
             right: 8px;
@@ -271,7 +286,9 @@
             z-index: 100;
             color: #6c757d;
             font-size: 16px;
-            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         `;
 
         input.style.paddingRight = '40px';
@@ -284,13 +301,43 @@
 
         // BLUR: Stop listening when input loses focus
         input.addEventListener('blur', function (e) {
-            if (activeInput === input) {
-                stopListening();
+            stopListening('Input lost focus');
+        });
+
+        // KEYDOWN: Stop listening IMMEDIATELY when user starts typing
+        input.addEventListener('keydown', function (e) {
+            // Check if this is a typing key (not special keys)
+            const specialKeys = [
+                'Shift', 'Ctrl', 'Alt', 'Meta', 'Control', 'AltGraph',
+                'CapsLock', 'NumLock', 'ScrollLock', 'Tab', 'Escape',
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+                'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'Delete'
+            ];
+
+            // Function keys F1-F12
+            const isFunctionKey = e.key.startsWith('F') && e.key.length === 2;
+
+            if (!specialKeys.includes(e.key) && !isFunctionKey && e.key.length === 1) {
+                // User is typing a character - STOP VOICE IMMEDIATELY
+                if (activeRecognition) {
+                    isTypingManually = true;
+                    stopListening('User started typing');
+                    showToast('Voice stopped - typing detected', 'info');
+                }
             }
         });
 
-        // Optional: Click on mic button also triggers focus
-        micBtn.style.pointerEvents = 'auto';
+        // INPUT event - also stop listening when input value changes via typing
+        input.addEventListener('input', function (e) {
+            if (activeRecognition && !isTypingManually) {
+                // Check if this change came from voice or typing
+                // If value length increased by more than 1, likely from voice
+                // But to be safe, we'll stop listening
+                stopListening('Input changed');
+            }
+        });
+
+        // Click on mic button also triggers focus and starts listening
         micBtn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -303,6 +350,22 @@
         const inputs = document.querySelectorAll('input.voice-input, input[data-voice="true"]');
         console.log(`Found ${inputs.length} inputs for voice attachment`);
         inputs.forEach(addVoiceInput);
+
+        // Also add to search input specifically
+        const searchInput = document.getElementById('search_product');
+        if (searchInput && !searchInput.hasAttribute('data-voice-attached')) {
+            addVoiceInput(searchInput);
+        }
+    }
+
+    // Auto-focus on search input (optional)
+    function autoFocusSearch() {
+        const searchInput = document.getElementById('search_product');
+        if (searchInput) {
+            setTimeout(function () {
+                searchInput.focus();
+            }, 500);
+        }
     }
 
     // Watch for dynamically added inputs
@@ -328,12 +391,12 @@
             addStyles();
             initVoiceInputs();
             observer.observe(document.body, { childList: true, subtree: true });
-            console.log('✅ Voice Input Ready - Focus on any field with class "voice-input" to start speaking');
+            console.log('✅ Voice Input Ready - Focus to speak, typing stops listening');
         });
     } else {
         addStyles();
         initVoiceInputs();
         observer.observe(document.body, { childList: true, subtree: true });
-        console.log('✅ Voice Input Ready - Focus on any field with class "voice-input" to start speaking');
+        console.log('✅ Voice Input Ready - Focus to speak, typing stops listening');
     }
 })();
