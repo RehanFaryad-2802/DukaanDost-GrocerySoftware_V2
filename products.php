@@ -217,13 +217,6 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
     </div>
 </div>
 
-<style>
-    .table thead th {
-        background-color: #000000 !important;
-        color: #ffffff !important;
-        font-weight: 600;
-    }
-</style>
 
 <!-- Products Table -->
 <?php include 'includes/product_table.php'; ?>
@@ -235,8 +228,8 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
 <div class="modal fade" id="pricingModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Manage Pricing Tiers</h5>
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white">Manage Pricing Tiers</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="pricingModalBody"></div>

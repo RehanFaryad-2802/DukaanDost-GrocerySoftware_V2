@@ -87,7 +87,6 @@ async function processVoiceText() {
     let segments = text.split(sep).map(s => s.trim()).filter(s => s.length > 1);
     if (segments.length === 0) { let c = text.replace(sep,' ').replace(/\s+/g,' ').trim(); if (c.length > 2) segments = [c]; }
     
-    console.log('Segments:', segments);
     
     if (segments.length === 0) {
         document.getElementById('processedItems').innerHTML = '<div class="alert alert-warning">⚠️ No names found</div>';
@@ -143,7 +142,6 @@ async function searchProductDeep(namePart) {
     for (const w of rw) clean = clean.replace(new RegExp('\\b'+w+'\\b','gi'), '').trim();
     clean = clean.replace(/\b\d+\b/g,'').replace(/\s+/g,' ').trim();
     
-    console.log('Searching:', clean);
     if (clean.length < 2) return { found: false };
     
     // Strategy 1: Full search
@@ -267,5 +265,3 @@ async function addRecognizedToCart() {
     renderCart(); updateTotal(); clearVoiceText(); stopVoiceInput();
     showNotification('success', '✅ Added ' + products.length + ' to cart!');
 }
-
-console.log('Voice.js vFinal loaded');

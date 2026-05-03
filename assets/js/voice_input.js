@@ -149,9 +149,6 @@
                 activeInput.placeholder = 'تلاش کریں...';
             }
 
-            if (reason) {
-                console.log(`Voice stopped: ${reason}`);
-            }
 
             activeInput = null;
         }
@@ -193,7 +190,6 @@
         activeRecognition.onresult = function (event) {
             // If user started typing, ignore voice results
             if (isTypingManually) {
-                console.log('Ignoring voice result - user is typing');
                 return;
             }
 
@@ -253,7 +249,6 @@
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.log('Speech recognition not supported');
             return;
         }
 
@@ -322,7 +317,6 @@
                 if (activeRecognition) {
                     isTypingManually = true;
                     stopListening('User started typing');
-                    showToast('Voice stopped - typing detected', 'info');
                 }
             }
         });
@@ -348,7 +342,6 @@
     // Initialize all voice inputs
     function initVoiceInputs() {
         const inputs = document.querySelectorAll('input.voice-input, input[data-voice="true"]');
-        console.log(`Found ${inputs.length} inputs for voice attachment`);
         inputs.forEach(addVoiceInput);
 
         // Also add to search input specifically
@@ -391,12 +384,10 @@
             addStyles();
             initVoiceInputs();
             observer.observe(document.body, { childList: true, subtree: true });
-            console.log('✅ Voice Input Ready - Focus to speak, typing stops listening');
         });
     } else {
         addStyles();
         initVoiceInputs();
         observer.observe(document.body, { childList: true, subtree: true });
-        console.log('✅ Voice Input Ready - Focus to speak, typing stops listening');
     }
 })();

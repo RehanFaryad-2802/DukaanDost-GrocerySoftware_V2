@@ -1,4 +1,3 @@
-<!-- Customer Details -->
 <div class="card mb-12">
     <div class="p-2">
         <div class="row">

@@ -9,10 +9,10 @@
                     <tr>
                         <th width="40"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
                         <th>Code</th>
-                        <th>Name</th>
-                        <th>Category</th>
+                        <th style="text-align: center;">Name</th>
+                        <th style="text-align: center;">Category</th>
                         <th>Unit</th>
-                        <th>Stock</th>
+                        <!-- <th>Stock</th> -->
                         <th>Cost</th>
                         <th>Retail</th>
                         <th>Wholesale</th>
@@ -43,10 +43,11 @@
                             <td><input type="checkbox" name="selected_products[]" value="<?= $product['id'] ?>"
                                     class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
                             <td><small><?= htmlspecialchars($product['code']) ?></small></td>
-                            <td dir="rtl"><strong><?= htmlspecialchars($product['name']) ?></strong></td>
-                            <td><?= htmlspecialchars($product['category'] ?: '-') ?></td>
+                            <td dir="rtl" style="text-align: center;">
+                                <strong><?= htmlspecialchars($product['name']) ?></strong></td>
+                            <td style="text-align: center;"><?= htmlspecialchars($product['category'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($product['unit'] ?: 'Piece') ?></td>
-                            <td><span class="badge bg-<?= $stock_class ?>"><?= $product['current_stock'] ?></span></td>
+                            <!-- <td><span class="badge bg-<?= $stock_class ?>"><?= $product['current_stock'] ?></span></td> -->
                             <td>Rs. <?= number_format($product['purchase_price'] ?? 0, 0) ?></td>
                             <td>Rs. <?= number_format($retail, 0) ?></td>
                             <td>Rs. <?= number_format($wholesale, 0) ?></td>

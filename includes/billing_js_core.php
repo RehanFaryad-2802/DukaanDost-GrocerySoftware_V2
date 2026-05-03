@@ -1,5 +1,5 @@
 <script>
-    // Global variables - check if already declared
+
     if (typeof cart === 'undefined') {
         var cart = [];
     }
@@ -115,7 +115,7 @@
         }
     }
 
-    // Add this function near the top of billing_js_core.php
+
     function getGrandTotal() {
         const totalElement = document.getElementById('grand_total');
         if (!totalElement) return 0;
@@ -240,7 +240,7 @@
     }
 
     async function completeSale() {
-        // Check if customer type is selected
+
         const customerTypeSelect = document.getElementById('customer_type');
         if (!customerTypeSelect) {
             console.error('Customer type select element not found');
@@ -262,7 +262,7 @@
             return;
         }
 
-        // Calculate totals
+
         const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
         const discountInput = document.getElementById('discount_input');
         const discountTypeSelect = document.getElementById('discount_type');
@@ -285,7 +285,7 @@
 
         const total = Math.max(0, subtotal - discount);
 
-        // Get customer info with null checks
+
         const customerName = document.getElementById('customer_name');
         const customerPhone = document.getElementById('customer_phone');
         const paymentMethod = document.getElementById('payment_method');
@@ -316,7 +316,7 @@
             }))
         };
 
-        // Show loading state on button
+
         const completeBtn = document.getElementById('completeSaleBtn');
         const originalBtnHtml = completeBtn ? completeBtn.innerHTML : '';
         if (completeBtn) {
@@ -334,15 +334,15 @@
             const result = await response.json();
 
             if (result.success) {
-                // Open print window
+
                 window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
 
-                // Reset cart and form
+
                 cart = [];
                 if (typeof renderCart === 'function') renderCart();
                 if (typeof updateTotal === 'function') updateTotal();
 
-                // Reset customer fields
+
                 customerTypeSelect.value = '';
                 customerName.value = '';
                 customerPhone.value = '';
@@ -365,7 +365,7 @@
             console.error('Complete sale error:', error);
             alert('Error completing sale: ' + error.message);
         } finally {
-            // Restore button
+
             if (completeBtn) {
                 completeBtn.disabled = false;
                 completeBtn.innerHTML = originalBtnHtml;
@@ -409,7 +409,7 @@
         return div.innerHTML;
     }
 
-    // Hold invoice function
+
     async function holdInvoice() {
         if (cart.length === 0) {
             showNotification('error', 'Cart is empty!');
@@ -482,7 +482,7 @@
         }
     }
 
-    // Show held invoices
+
     async function showHeldInvoices() {
         try {
             const response = await fetch('api/hold_invoice.php', {
@@ -636,7 +636,7 @@
         }
     }
 
-    // Load quick products grid
+
     async function loadQuickProducts() {
         const container = document.getElementById('quick_products');
         if (!container) {
@@ -644,7 +644,6 @@
             return;
         }
 
-        console.log('Loading quick products...');
         container.innerHTML = '<div class="col-12 text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
         try {
@@ -672,7 +671,6 @@
             }
 
             container.innerHTML = html;
-            console.log('Quick products loaded:', products.length);
 
         } catch (error) {
             console.error('Error loading quick products:', error);
@@ -680,7 +678,7 @@
         }
     }
 
-    // Load customers dropdown
+
     async function loadCustomers() {
         try {
             const response = await fetch("api/get_customers.php");
@@ -702,20 +700,19 @@
         }
     }
 
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('DOM loaded - initializing billing page');
 
-        // Load quick products
+    document.addEventListener('DOMContentLoaded', function () {
+
+
         loadQuickProducts();
 
-        // Load customers
+
         loadCustomers();
 
-        // Update total display
+
         updateTotal();
 
-        // Set focus to search input
+
         const searchInput = document.getElementById('search_product');
         if (searchInput) {
             setTimeout(function () {
@@ -723,18 +720,18 @@
             }, 500);
         }
     });
-    // Handle F12 key for printing/complete sale
+
     document.addEventListener('keydown', function (e) {
-        // Check for F12 key
+
         if (e.key === 'F12' || e.keyCode === 123) {
             e.preventDefault();
             e.stopPropagation();
 
-            // Call the complete sale function
+
             if (typeof completeSale === 'function') {
-                // Check if cart has items
+
                 if (cart && cart.length > 0) {
-                    // Also check if customer type is selected
+
                     if (checkCustomerType()) {
                         completeSale();
                     }
@@ -749,9 +746,9 @@
         }
     });
 
-    // Also add Ctrl+P as alternative (standard print shortcut)
+
     document.addEventListener('keydown', function (e) {
-        // Check for Ctrl+P (or Cmd+P on Mac)
+
         if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
             e.preventDefault();
             e.stopPropagation();

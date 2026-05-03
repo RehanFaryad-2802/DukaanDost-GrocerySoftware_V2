@@ -72,12 +72,12 @@ async function renderCart() {
                     <strong>${escapeHtml(item.product_name)}</strong>
                     ${item.tier_info ? `<br><small class="text-muted">${item.tier_info}</small>` : ''}
                 </td>
-                <td width="120">
+                <td width="100">
                     <input type="number" class="form-control form-control-sm cart-qty" 
                            data-index="${index}"
                            value="${qtyValue}" step="any" 
                            onchange="updateCartItemQuantity(${index}, this.value)"
-                           style="width: 100px;">
+                           style="width: 100%;">
                 </td>
                 <td width="120">
                     <select class="form-select form-select-sm cart-unit-select" 
@@ -328,7 +328,6 @@ function escapeHtml(text) {
 // Show notification function
 if (typeof showNotification !== 'function') {
     window.showNotification = function (type, message) {
-        console.log(`[${type}] ${message}`);
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
         alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';

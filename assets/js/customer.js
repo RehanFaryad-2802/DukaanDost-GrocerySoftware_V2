@@ -14,7 +14,6 @@ async function loadCustomers() {
   }
 }
 
-// ADD THIS MISSING FUNCTION
 function updatePricingNote() {
   const type = document.getElementById('customer_type').value;
   const note = document.getElementById('pricing_note');
@@ -33,7 +32,6 @@ function updatePricingNote() {
   }
 }
 
-// ADD THIS MISSING FUNCTION
 async function recalculateCartPrices() {
   if (!cart || cart.length === 0) return;
 
@@ -192,7 +190,6 @@ function selectCustomer(id, name, phone, type) {
   if (typeof showNotification === 'function') {
     showNotification("success", `Customer: ${name} selected`);
   } else {
-    console.log(`Customer: ${name} selected`);
   }
 }
 

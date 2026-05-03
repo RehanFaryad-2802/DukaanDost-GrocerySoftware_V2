@@ -11,7 +11,7 @@ if (isset($_POST['add_unit'])) {
     $name = trim($_POST['unit_name']);
     $symbol = trim($_POST['unit_symbol']);
     $type = $_POST['unit_type'] ?? 'packaging';
-    
+
     if (!empty($name) && !empty($symbol)) {
         try {
             $stmt = $pdo->prepare("INSERT INTO units (name, symbol, type) VALUES (?, ?, ?)");
@@ -32,25 +32,25 @@ if (isset($_POST['edit_unit'])) {
     $name = trim($_POST['edit_name']);
     $symbol = trim($_POST['edit_symbol']);
     $type = $_POST['edit_type'] ?? 'packaging';
-    
+
     if (!empty($name) && !empty($symbol)) {
         try {
             // Get old symbol
             $stmt = $pdo->prepare("SELECT symbol FROM units WHERE id = ?");
             $stmt->execute([$id]);
             $oldSymbol = $stmt->fetchColumn();
-            
+
             // Update unit in units table
             $stmt = $pdo->prepare("UPDATE units SET name = ?, symbol = ?, type = ? WHERE id = ?");
             $stmt->execute([$name, $symbol, $type, $id]);
-            
+
             // Update all products using this unit
             $stmt = $pdo->prepare("UPDATE products SET unit = ? WHERE unit = ?");
             $stmt->execute([$symbol, $oldSymbol]);
-            
+
             $updatedProducts = $stmt->rowCount();
             $success = "Unit updated! $updatedProducts products updated.";
-            
+
         } catch (PDOException $e) {
             if ($e->errorInfo[1] == 1062) {
                 $error = "Unit symbol '$symbol' already exists!";
@@ -63,16 +63,16 @@ if (isset($_POST['edit_unit'])) {
 
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    
+
     // Check if unit is in use
     $stmt = $pdo->prepare("SELECT symbol FROM units WHERE id = ?");
     $stmt->execute([$id]);
     $symbol = $stmt->fetchColumn();
-    
+
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE unit = ?");
     $stmt->execute([$symbol]);
     $inUse = $stmt->fetchColumn();
-    
+
     if ($inUse > 0) {
         $error = "Cannot delete - unit is used by $inUse product(s)!";
     } else {
@@ -137,7 +137,7 @@ $units = $pdo->query("SELECT * FROM units ORDER BY type, name")->fetchAll();
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-success text-white">
@@ -155,24 +155,28 @@ $units = $pdo->query("SELECT * FROM units ORDER BY type, name")->fetchAll();
                     </thead>
                     <tbody>
                         <?php foreach ($units as $unit): ?>
-                        <tr>
-                            <td><strong><?php echo htmlspecialchars($unit['name']); ?></strong></td>
-                            <td><code><?php echo htmlspecialchars($unit['symbol']); ?></code></td>
-                            <td><span class="badge bg-info"><?php echo $unit['type']; ?></span></td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-warning" onclick="editUnit(<?php echo $unit['id']; ?>, '<?php echo htmlspecialchars($unit['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($unit['symbol'], ENT_QUOTES); ?>', '<?php echo $unit['type']; ?>')">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <a href="units.php?delete=<?php echo $unit['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this unit?')">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td><strong><?php echo htmlspecialchars($unit['name']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($unit['symbol']); ?></td>
+                                <td><span class="badge bg-success"><?php echo $unit['type']; ?></span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-dark"
+                                            onclick="editUnit(<?php echo $unit['id']; ?>, '<?php echo htmlspecialchars($unit['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($unit['symbol'], ENT_QUOTES); ?>', '<?php echo $unit['type']; ?>')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="units.php?delete=<?php echo $unit['id']; ?>" class="btn btn-outline-danger"
+                                            onclick="return confirm('Delete this unit?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
                         <?php if (count($units) == 0): ?>
-                        <tr><td colspan="4" class="text-center py-4 text-muted">No units found.</td></tr>
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No units found.</td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -220,13 +224,13 @@ $units = $pdo->query("SELECT * FROM units ORDER BY type, name")->fetchAll();
 </div>
 
 <script>
-function editUnit(id, name, symbol, type) {
-    document.getElementById('edit_unit_id').value = id;
-    document.getElementById('edit_unit_name').value = name;
-    document.getElementById('edit_unit_symbol').value = symbol;
-    document.getElementById('edit_unit_type').value = type;
-    new bootstrap.Modal(document.getElementById('editUnitModal')).show();
-}
+    function editUnit(id, name, symbol, type) {
+        document.getElementById('edit_unit_id').value = id;
+        document.getElementById('edit_unit_name').value = name;
+        document.getElementById('edit_unit_symbol').value = symbol;
+        document.getElementById('edit_unit_type').value = type;
+        new bootstrap.Modal(document.getElementById('editUnitModal')).show();
+    }
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

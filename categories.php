@@ -154,14 +154,14 @@ $categories = $stmt->fetchAll();
                                 <td><small><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small></td>
                                 <td>
                                     <?php if ($cat['product_count'] > 0): ?>
-                                        <span class="badge bg-primary"><?php echo $cat['product_count']; ?> products</span>
+                                        <span class="badge bg-success"><?php echo $cat['product_count']; ?> products</span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">0 products</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-warning"
+                                        <button class="btn btn-outline-dark"
                                             onclick="editCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($cat['description'] ?? '', ENT_QUOTES); ?>')">
                                             <i class="bi bi-pencil"></i>
                                         </button>

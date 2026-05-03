@@ -1,7 +1,6 @@
 <script>
     <?php if ($editing_invoice): ?>
         (async function () {
-            console.log('Edit mode activated for invoice: <?php echo $editing_invoice['invoice_no']; ?>');
 
             customerType = '<?php echo $editing_invoice['customer_type']; ?>';
             document.getElementById('customer_type').value = customerType;
@@ -36,7 +35,6 @@
                 });
             }
 
-            console.log('Loaded cart items:', cart.length);
 
             renderCart();
             updateTotal();

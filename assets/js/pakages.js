@@ -1,5 +1,3 @@
-// test console.log('Packages JS loaded');
-console.log("Packages JS loaded");
 async function addPackageRow() {
   packageCount++;
   const container = document.getElementById("packagesContainer");

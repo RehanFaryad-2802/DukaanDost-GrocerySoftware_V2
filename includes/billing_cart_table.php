@@ -1,4 +1,3 @@
-<!-- Cart Items -->
 <div class="card">
     <div class="card-header bg-primary text-white">
         <i class="bi bi-cart"></i> Current Bill Items

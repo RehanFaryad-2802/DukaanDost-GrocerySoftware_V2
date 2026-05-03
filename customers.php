@@ -12,7 +12,7 @@ if (isset($_POST['add_customer'])) {
     $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $customer_type = $_POST['customer_type'] ?? 'retail';
-    
+
     if (!empty($name)) {
         try {
             $stmt = $pdo->prepare("
@@ -33,7 +33,7 @@ if (isset($_POST['edit_customer'])) {
     $phone = trim($_POST['edit_phone'] ?? '');
     $address = trim($_POST['edit_address'] ?? '');
     $customer_type = $_POST['edit_customer_type'] ?? 'retail';
-    
+
     if (!empty($name)) {
         try {
             $stmt = $pdo->prepare("
@@ -50,7 +50,7 @@ if (isset($_POST['edit_customer'])) {
 
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    
+
     // Don't delete Walk-in Customer (ID 1)
     if ($id != 1) {
         $stmt = $pdo->prepare("DELETE FROM customers WHERE id = ?");
@@ -93,7 +93,7 @@ $customers = $stmt->fetchAll();
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-striped table-hover mb-0">
-            <thead class="table-dark">
+            <thead class="table-primary card-header">
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
@@ -106,34 +106,37 @@ $customers = $stmt->fetchAll();
             </thead>
             <tbody>
                 <?php foreach ($customers as $customer): ?>
-                <tr>
-                    <td>#<?php echo $customer['id']; ?></td>
-                    <td><strong><?php echo htmlspecialchars($customer['name']); ?></strong></td>
-                    <td><?php echo htmlspecialchars($customer['phone'] ?: '-'); ?></td>
-                    <td><?php echo htmlspecialchars($customer['address'] ?: '-'); ?></td>
-                    <td>
-                        <span class="badge bg-<?php echo $customer['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>">
-                            <?php echo ucfirst($customer['customer_type']); ?>
-                        </span>
-                    </td>
-                    <td>Rs. <?php echo number_format($customer['total_purchases'], 2); ?></td>
-                    <td>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-warning" onclick="editCustomer(<?php echo $customer['id']; ?>, '<?php echo htmlspecialchars($customer['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['phone'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['address'] ?? '', ENT_QUOTES); ?>', '<?php echo $customer['customer_type']; ?>')">
-                                <i class="bi bi-pen"></i>
-                            </button>
-                            <?php if ($customer['id'] != 1): ?>
-                            <a href="customers.php?delete=<?php echo $customer['id']; ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this customer?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                            <?php else: ?>
-                            <button class="btn btn-outline-secondary" disabled title="Default customer">
-                                <i class="bi bi-lock"></i>
-                            </button>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>#<?php echo $customer['id']; ?></td>
+                        <td><strong><?php echo htmlspecialchars($customer['name']); ?></strong></td>
+                        <td><?php echo htmlspecialchars($customer['phone'] ?: '-'); ?></td>
+                        <td><?php echo htmlspecialchars($customer['address'] ?: '-'); ?></td>
+                        <td>
+                            <span
+                                class="badge bg-<?php echo $customer['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>">
+                                <?php echo ucfirst($customer['customer_type']); ?>
+                            </span>
+                        </td>
+                        <td>Rs. <?php echo number_format($customer['total_purchases'], 2); ?></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-warning"
+                                    onclick="editCustomer(<?php echo $customer['id']; ?>, '<?php echo htmlspecialchars($customer['name'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['phone'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['address'] ?? '', ENT_QUOTES); ?>', '<?php echo $customer['customer_type']; ?>')">
+                                    <i class="bi bi-pen"></i>
+                                </button>
+                                <?php if ($customer['id'] != 1): ?>
+                                    <a href="customers.php?delete=<?php echo $customer['id']; ?>" class="btn btn-outline-danger"
+                                        onclick="return confirm('Delete this customer?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <button class="btn btn-outline-secondary" disabled title="Default customer">
+                                        <i class="bi bi-lock"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -200,7 +203,8 @@ $customers = $stmt->fetchAll();
                     </div>
                     <div class="mb-3">
                         <label>Address (Optional)</label>
-                        <textarea name="edit_address" id="edit_customer_address" class="form-control" rows="2"></textarea>
+                        <textarea name="edit_address" id="edit_customer_address" class="form-control"
+                            rows="2"></textarea>
                     </div>
                     <div class="mb-3">
                         <label>Customer Type</label>
@@ -220,14 +224,14 @@ $customers = $stmt->fetchAll();
 </div>
 
 <script>
-function editCustomer(id, name, phone, address, type) {
-    document.getElementById('edit_customer_id').value = id;
-    document.getElementById('edit_customer_name').value = name;
-    document.getElementById('edit_customer_phone').value = phone;
-    document.getElementById('edit_customer_address').value = address;
-    document.getElementById('edit_customer_type').value = type;
-    new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
-}
+    function editCustomer(id, name, phone, address, type) {
+        document.getElementById('edit_customer_id').value = id;
+        document.getElementById('edit_customer_name').value = name;
+        document.getElementById('edit_customer_phone').value = phone;
+        document.getElementById('edit_customer_address').value = address;
+        document.getElementById('edit_customer_type').value = type;
+        new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
+    }
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

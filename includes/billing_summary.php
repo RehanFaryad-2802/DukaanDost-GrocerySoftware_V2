@@ -66,7 +66,7 @@
 
             <hr>
 
-            <div class="mb-3 position-absolute" style="opacity: 0">
+            <div class="mb-3 position-absolute" style="opacity: 0;z-index: -9999;">
                 <label>Payment Method</label>
                 <select id="payment_method" class="form-select">
                     <option value="cash">Cash</option>

@@ -673,5 +673,4 @@
         }
     });
 
-    console.log('Global typing detector active - Start typing anywhere to focus search');
 </script>
