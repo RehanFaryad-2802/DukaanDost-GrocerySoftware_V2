@@ -250,7 +250,11 @@ while ($row = $stmt->fetch()) {
     <div class="info-row">
     </div>
 
-
+    <div class="info-row">
+        <span>Total Items:
+            <?php echo count($items); ?>
+        </span>
+    </div>
     <div class="divider"></div>
 
     <table>
@@ -308,9 +312,7 @@ while ($row = $stmt->fetch()) {
 
     <div class="divider"></div>
 
-    <div class="info-row">
-        <span>Total Items: <?php echo count($items); ?></span>
-    </div>
+
 
 
     <?php if ($invoice['discount_amount'] > 0): ?>
@@ -320,11 +322,10 @@ while ($row = $stmt->fetch()) {
         </div>
     <?php endif; ?>
 
-    <div class="divider"></div>
 
     <div class="info-row total-row">
-        <span>TOTAL:</span>
         <span>Rs. <?php echo number_format($invoice['total_amount'], 0); ?></span>
+        <span dir="rtl">ٹوٹل:</span>
     </div>
 
     <div class="divider"></div>
