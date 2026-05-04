@@ -312,9 +312,6 @@ while ($row = $stmt->fetch()) {
 
     <div class="divider"></div>
 
-
-
-
     <?php if ($invoice['discount_amount'] > 0): ?>
         <div class="info-row">
             <span>Discount:</span>
