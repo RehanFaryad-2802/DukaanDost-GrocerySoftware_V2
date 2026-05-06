@@ -339,3 +339,375 @@ if (typeof showNotification !== 'function') {
         setTimeout(() => alertDiv.remove(), 3000);
     };
 }
+
+
+
+// ===============================================
+// PAGE LEAVE PROTECTION - Prevent losing cart items
+// ===============================================
+
+let leaveProtectionEnabled = true;
+let userConfirmedLeave = false;
+
+/**
+ * Check if cart has items and show appropriate warning
+ * @returns {string|boolean} Warning message or true to allow leaving
+ */
+function checkCartBeforeLeave() {
+    // Don't show if protection is disabled or user already confirmed
+    if (!leaveProtectionEnabled || userConfirmedLeave) {
+        return true;
+    }
+
+    // Check if cart has items (global cart variable from billing page)
+    if (typeof cart !== 'undefined' && cart && cart.length > 0) {
+        const itemCount = cart.length;
+        const totalAmount = typeof getGrandTotal === 'function' ? getGrandTotal() : 0;
+
+        return `⚠️ You have ${itemCount} item(s) in your cart (Total: Rs. ${totalAmount.toFixed(2)})\n\n` +
+            `Leaving this page will LOSE all unsaved items!\n\n` +
+            `• Click "Cancel" to stay on this page\n` +
+            `• Click "Save to Held Bills" to save your cart\n` +
+            `• Click "OK" to leave anyway (items will be lost)`;
+    }
+
+    return true;
+}
+
+/**
+ * Show a modal dialog with options to save cart before leaving
+ * @param {Event} e - BeforeUnload event
+ */
+function showLeaveWarningModal(e) {
+    // Don't show if already confirmed or protection disabled
+    if (userConfirmedLeave || !leaveProtectionEnabled) {
+        return;
+    }
+
+    // Check if cart has items
+    if (typeof cart === 'undefined' || !cart || cart.length === 0) {
+        return;
+    }
+
+    // Standard beforeunload message (browsers show their own dialog)
+    // This is the only reliable way to prevent navigation
+    const message = checkCartBeforeLeave();
+    if (message !== true) {
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+    }
+}
+
+/**
+ * Create and show a custom modal for cart save options
+ * This is shown when user tries to click a link or back button
+ */
+function showCartSaveModal(targetUrl) {
+    // Don't show if already confirmed
+    if (userConfirmedLeave) {
+        window.location.href = targetUrl;
+        return;
+    }
+
+    // Check if cart has items
+    if (typeof cart === 'undefined' || !cart || cart.length === 0) {
+        window.location.href = targetUrl;
+        return;
+    }
+
+    // Get cart summary
+    const itemCount = cart.length;
+    let total = 0;
+    if (typeof updateTotal === 'function') {
+        // Calculate properly
+        cart.forEach(item => {
+            total += (item.total_price || 0);
+        });
+    }
+
+    // Check if modal already exists
+    let modal = document.getElementById('leaveWarningModal');
+    if (modal) {
+        modal.remove();
+    }
+
+    // Create modal HTML
+    modal = document.createElement('div');
+    modal.id = 'leaveWarningModal';
+    modal.className = 'modal fade';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Unsaved Cart Items!
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-cart-x" style="font-size: 48px; color: #ffc107;"></i>
+                    </div>
+                    <p class="lead text-center">
+                        You have <strong class="text-danger">${itemCount} item(s)</strong> in your cart!
+                    </p>
+                    <p class="text-center text-muted">
+                        Total: <strong>Rs. ${total.toFixed(2)}</strong>
+                    </p>
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <strong>Warning:</strong> Leaving this page will <strong>LOSE ALL UNSAVED ITEMS</strong>.
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12 mb-2">
+                            <button class="btn btn-success w-100" id="saveAndLeaveBtn">
+                                <i class="bi bi-pause-circle"></i> Save to Held Bills & Leave
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-arrow-left"></i> Stay on Page
+                    </button>
+                    <button type="button" class="btn btn-danger" id="forceLeaveBtn">
+                        <i class="bi bi-trash3"></i> Leave Anyway (Lose Items)
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+
+    // Handle Save & Leave
+    document.getElementById('saveAndLeaveBtn').addEventListener('click', async function () {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+
+        try {
+            // Call holdInvoice function if available
+            if (typeof holdInvoice === 'function') {
+                await holdInvoice();
+                userConfirmedLeave = true;
+                window.location.href = targetUrl;
+            } else if (typeof saveCartToHeld === 'function') {
+                await saveCartToHeld();
+                userConfirmedLeave = true;
+                window.location.href = targetUrl;
+            } else {
+                // Fallback: try to save via API directly
+                await saveCartDirectly();
+                userConfirmedLeave = true;
+                window.location.href = targetUrl;
+            }
+        } catch (error) {
+            console.error('Failed to save cart:', error);
+            showNotification('error', 'Failed to save cart. Please try again.');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-pause-circle"></i> Save to Held Bills & Leave';
+        }
+    });
+
+    // Handle Force Leave
+    document.getElementById('forceLeaveBtn').addEventListener('click', function () {
+        userConfirmedLeave = true;
+        bsModal.hide();
+        window.location.href = targetUrl;
+    });
+
+    // Cleanup modal on hide
+    modal.addEventListener('hidden.bs.modal', function () {
+        modal.remove();
+    });
+}
+
+/**
+ * Direct API call to save cart without relying on global functions
+ */
+async function saveCartDirectly() {
+    if (!cart || cart.length === 0) return;
+
+    const subtotal = cart.reduce((sum, item) => sum + (item.total_price || 0), 0);
+    const discountInput = document.getElementById('discount_input');
+    const discountType = document.getElementById('discount_type');
+
+    let discount = 0;
+    if (discountInput && discountType) {
+        const discountValue = parseFloat(discountInput.value) || 0;
+        if (discountType.value === 'percent') {
+            discount = subtotal * (discountValue / 100);
+        } else {
+            discount = discountValue;
+        }
+    }
+
+    const total = Math.max(0, subtotal - discount);
+
+    const invoiceData = {
+        action: 'save',
+        customer_name: document.getElementById('customer_name')?.value || '',
+        customer_phone: document.getElementById('customer_phone')?.value || '',
+        customer_type: document.getElementById('customer_type')?.value || 'retail',
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
+        cart: cart.map(item => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            base_unit: item.base_unit,
+            display_unit: item.display_unit,
+            actual_quantity: item.actual_quantity || item.quantity || 0,
+            display_quantity: item.display_quantity || item.quantity,
+            unit_price: item.unit_price || 0,
+            total_price: item.total_price || 0,
+            tier_info: item.tier_info || '',
+            package_multiplier: item.package_multiplier || 1,
+            selected_package_id: item.selected_package_id
+        }))
+    };
+
+    const response = await fetch('api/hold_invoice.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceData)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+        showNotification('success', `Cart saved! Reference: ${result.hold_ref}`);
+        // Clear cart after successful save
+        cart = [];
+        if (typeof renderCart === 'function') renderCart();
+        if (typeof updateTotal === 'function') updateTotal();
+    } else {
+        throw new Error(result.error || 'Failed to save cart');
+    }
+}
+
+/**
+ * Intercept all link clicks to show warning if cart has items
+ */
+function interceptNavigationLinks() {
+    document.addEventListener('click', function (e) {
+        // Find if clicked element is a link or inside a link
+        let link = e.target.closest('a');
+        if (!link) return;
+
+        // Don't intercept if:
+        // - User already confirmed leave
+        // - Protection disabled
+        // - Link has special attributes
+        if (userConfirmedLeave || !leaveProtectionEnabled) return;
+        if (link.getAttribute('target') === '_blank') return;
+        if (link.href.startsWith('javascript:')) return;
+        if (link.href.startsWith('#')) return;
+
+        // Check if cart has items
+        if (typeof cart !== 'undefined' && cart && cart.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            showCartSaveModal(link.href);
+        }
+    });
+}
+
+/**
+ * Intercept back/forward navigation
+ */
+function interceptHistoryNavigation() {
+    // Push a state to detect back button
+    history.pushState({ page: 'billing' }, '', window.location.href);
+
+    window.addEventListener('popstate', function (e) {
+        if (userConfirmedLeave || !leaveProtectionEnabled) return;
+
+        if (typeof cart !== 'undefined' && cart && cart.length > 0) {
+            // Push state again to prevent immediate navigation
+            history.pushState({ page: 'billing' }, '', window.location.href);
+            showCartSaveModal(null);
+        } else {
+            // Allow back navigation
+            history.back();
+        }
+    });
+}
+
+/**
+ * Enable or disable leave protection
+ * @param {boolean} enabled - Enable/disable protection
+ */
+function setLeaveProtection(enabled) {
+    leaveProtectionEnabled = enabled;
+    if (!enabled) {
+        userConfirmedLeave = true;
+    }
+}
+
+/**
+ * Reset leave protection (call after successful sale or cart clear)
+ */
+function resetLeaveProtection() {
+    userConfirmedLeave = false;
+    leaveProtectionEnabled = true;
+}
+
+// ===============================================
+// INITIALIZE PAGE LEAVE PROTECTION
+// ===============================================
+
+// Set up beforeunload event (browser's native dialog)
+window.addEventListener('beforeunload', function (e) {
+    if (userConfirmedLeave) return;
+    if (typeof cart !== 'undefined' && cart && cart.length > 0) {
+        const message = `You have ${cart.length} item(s) in your cart. Leaving will lose them!`;
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+    }
+});
+
+// Intercept link clicks
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+        interceptNavigationLinks();
+        interceptHistoryNavigation();
+    });
+} else {
+    interceptNavigationLinks();
+    interceptHistoryNavigation();
+}
+
+// Also intercept form submissions that might navigate away
+document.addEventListener('submit', function (e) {
+    if (userConfirmedLeave || !leaveProtectionEnabled) return;
+
+    const form = e.target;
+    const action = form.getAttribute('action');
+
+    // If form submits to a different page and cart has items
+    if (action && action !== '' && action !== '#' &&
+        typeof cart !== 'undefined' && cart && cart.length > 0) {
+
+        // Check if it's a form that will navigate away
+        if (!form.getAttribute('target') || form.getAttribute('target') !== '_blank') {
+            e.preventDefault();
+            showCartSaveModal(action);
+        }
+    }
+});
+
+// Export functions for use in other scripts
+window.cartLeaveProtection = {
+    setEnabled: setLeaveProtection,
+    reset: resetLeaveProtection,
+    userConfirmed: () => userConfirmedLeave,
+    forceSave: saveCartDirectly
+};

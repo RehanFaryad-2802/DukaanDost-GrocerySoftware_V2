@@ -1,11 +1,73 @@
-// ===============================================
-// Voice Input - Auto-start on focus, stop on typing
-// ===============================================
+// Add this at the very top of voice_input.js
+window.stopAllVoiceInput = function () {
+    if (window.__activeRecognition) {
+        try { window.__activeRecognition.abort(); } catch (e) { }
+        window.__activeRecognition = null;
+    }
+    if (window.recognition) {
+        try { window.recognition.abort(); } catch (e) { }
+        window.recognition = null;
+    }
+    document.querySelectorAll('.voice-input-wrapper').forEach(wrapper => {
+        const input = wrapper.querySelector('input');
+        if (input) {
+            input.style.paddingRight = '';
+            wrapper.parentNode.insertBefore(input, wrapper);
+            wrapper.remove();
+        }
+    });
+    document.querySelectorAll('input.voice-input, input[data-voice="true"], #search_product').forEach(input => {
+        input.removeAttribute('data-voice-attached');
+    });
+};
+window.__voiceInputEnabled = true;
+
+// Function to check and update voice input status
+async function updateVoiceInputStatus() {
+    try {
+        const response = await fetch('api/get_user_preference.php?key=voice_input');
+        const data = await response.json();
+        window.__voiceInputEnabled = data.value === 'on';
+        console.log('Voice input:', window.__voiceInputEnabled ? 'ENABLED' : 'DISABLED');
+
+        // If voice is disabled, stop any active listening
+        if (!window.__voiceInputEnabled && window.__activeRecognition) {
+            try {
+                window.__activeRecognition.abort();
+            } catch (e) { }
+            window.__activeRecognition = null;
+
+            // Remove listening class from active input
+            if (window.__activeInput) {
+                window.__activeInput.classList.remove('voice-input-listening');
+                const wrapper = window.__activeInput.closest('.voice-input-wrapper');
+                if (wrapper) {
+                    const micBtn = wrapper.querySelector('.voice-mic-btn');
+                    if (micBtn) micBtn.classList.remove('listening');
+                }
+                window.__activeInput = null;
+            }
+        }
+
+        return window.__voiceInputEnabled;
+    } catch (e) {
+        window.__voiceInputEnabled = true;
+        return true;
+    }
+}
+
+// Call immediately and when page becomes visible
+updateVoiceInputStatus();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateVoiceInputStatus);
+} else {
+    updateVoiceInputStatus();
+}
 
 (function () {
-    // Active recognition instance
-    let activeRecognition = null;
-    let activeInput = null;
+    // Active recognition instance - make global
+    window.__activeRecognition = null;
+    window.__activeInput = null;
     let isTypingManually = false;
 
     // Add CSS
@@ -95,7 +157,6 @@
             .voice-toast.voice-toast-error { background: #dc3545 !important; }
             .voice-toast.voice-toast-info { background: #17a2b8 !important; }
             
-            /* RTL Support */
             [dir="rtl"] .voice-mic-btn,
             .voice-input-wrapper[dir="rtl"] .voice-mic-btn {
                 right: auto !important;
@@ -129,34 +190,38 @@
 
     // Stop current listening
     function stopListening(reason = '') {
-        if (activeRecognition) {
+        if (window.__activeRecognition) {
             try {
-                activeRecognition.abort();
+                window.__activeRecognition.abort();
             } catch (e) { }
-            activeRecognition = null;
+            window.__activeRecognition = null;
         }
 
-        if (activeInput) {
-            activeInput.classList.remove('voice-input-listening');
-            const wrapper = activeInput.closest('.voice-input-wrapper');
+        if (window.__activeInput) {
+            window.__activeInput.classList.remove('voice-input-listening');
+            const wrapper = window.__activeInput.closest('.voice-input-wrapper');
             if (wrapper) {
                 const micBtn = wrapper.querySelector('.voice-mic-btn');
                 if (micBtn) micBtn.classList.remove('listening');
             }
 
-            // Reset placeholder
-            if (activeInput.placeholder != 'تلاش کریں...') {
-                activeInput.placeholder = 'تلاش کریں...';
+            if (window.__activeInput.placeholder != 'تلاش کریں...') {
+                window.__activeInput.placeholder = 'تلاش کریں...';
             }
 
-
-            activeInput = null;
+            window.__activeInput = null;
         }
         isTypingManually = false;
     }
 
     // Start listening for an input
     function startListening(input, micBtn) {
+        // CRITICAL: Check if voice input is enabled in settings - check fresh each time
+        if (!window.__voiceInputEnabled) {
+            console.log('Voice input blocked - disabled in settings');
+            return false;
+        }
+
         // Stop any existing listening first
         stopListening('New request');
 
@@ -171,27 +236,24 @@
         }
 
         // Set active
-        activeInput = input;
+        window.__activeInput = input;
         input.classList.add('voice-input-listening');
         if (micBtn) micBtn.classList.add('listening');
 
         // Create recognition
-        activeRecognition = new SpeechRecognition();
-        activeRecognition.lang = 'ur-PK';
-        activeRecognition.continuous = false;
-        activeRecognition.interimResults = true;
-        activeRecognition.maxAlternatives = 1;
+        window.__activeRecognition = new SpeechRecognition();
+        window.__activeRecognition.lang = 'ur-PK';
+        window.__activeRecognition.continuous = false;
+        window.__activeRecognition.interimResults = true;
+        window.__activeRecognition.maxAlternatives = 1;
 
-        activeRecognition.onstart = function () {
+        window.__activeRecognition.onstart = function () {
             input.placeholder = 'بولیں...';
             showToast('بولیں...', 'info');
         };
 
-        activeRecognition.onresult = function (event) {
-            // If user started typing, ignore voice results
-            if (isTypingManually) {
-                return;
-            }
+        window.__activeRecognition.onresult = function (event) {
+            if (isTypingManually) return;
 
             let interim = '';
             let final = '';
@@ -214,32 +276,25 @@
                 input.value = final;
                 input.placeholder = '';
                 showToast(`✅ "${final}" added`, 'success');
-
-                // Trigger events for search
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
-
-                // Auto-stop after successful input
                 stopListening('Voice input complete');
             }
         };
 
-        activeRecognition.onerror = function (event) {
-            let msg = 'Voice error';
-            if (event.error === 'no-speech') msg = 'No speech detected - click mic and speak again';
-            else if (event.error === 'not-allowed') msg = 'Microphone permission denied';
-            else if (event.error === 'aborted') return; // User stopped
-            showToast(msg, 'error');
+        window.__activeRecognition.onerror = function (event) {
+            if (event.error === 'aborted') return;
+            showToast('Voice error: ' + event.error, 'error');
             stopListening('Error: ' + event.error);
         };
 
-        activeRecognition.onend = function () {
-            if (activeInput === input && !isTypingManually) {
+        window.__activeRecognition.onend = function () {
+            if (window.__activeInput === input && !isTypingManually) {
                 stopListening('Recognition ended');
             }
         };
 
-        activeRecognition.start();
+        window.__activeRecognition.start();
         return true;
     }
 
@@ -248,13 +303,10 @@
         if (input.hasAttribute('data-voice-attached')) return;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            return;
-        }
+        if (!SpeechRecognition) return;
 
         input.setAttribute('data-voice-attached', 'true');
 
-        // Create wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'voice-input-wrapper';
         wrapper.style.cssText = 'position: relative; display: inline-block; width: 100%;';
@@ -262,46 +314,24 @@
         input.parentNode.insertBefore(wrapper, input);
         wrapper.appendChild(input);
 
-        // Create mic button
         const micBtn = document.createElement('button');
         micBtn.type = 'button';
         micBtn.className = 'voice-mic-btn';
         micBtn.innerHTML = '<i class="bi bi-mic"></i>';
         micBtn.title = 'Click to speak';
-        micBtn.style.cssText = `
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 20px;
-            z-index: 100;
-            color: #6c757d;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
 
         input.style.paddingRight = '40px';
         wrapper.appendChild(micBtn);
 
-        // FOCUS: Start listening when input gets focus
         input.addEventListener('focus', function (e) {
             startListening(input, micBtn);
         });
 
-        // BLUR: Stop listening when input loses focus
         input.addEventListener('blur', function (e) {
             stopListening('Input lost focus');
         });
 
-        // KEYDOWN: Stop listening IMMEDIATELY when user starts typing
         input.addEventListener('keydown', function (e) {
-            // Check if this is a typing key (not special keys)
             const specialKeys = [
                 'Shift', 'Ctrl', 'Alt', 'Meta', 'Control', 'AltGraph',
                 'CapsLock', 'NumLock', 'ScrollLock', 'Tab', 'Escape',
@@ -309,29 +339,22 @@
                 'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'Delete'
             ];
 
-            // Function keys F1-F12
             const isFunctionKey = e.key.startsWith('F') && e.key.length === 2;
 
             if (!specialKeys.includes(e.key) && !isFunctionKey && e.key.length === 1) {
-                // User is typing a character - STOP VOICE IMMEDIATELY
-                if (activeRecognition) {
+                if (window.__activeRecognition) {
                     isTypingManually = true;
                     stopListening('User started typing');
                 }
             }
         });
 
-        // INPUT event - also stop listening when input value changes via typing
         input.addEventListener('input', function (e) {
-            if (activeRecognition && !isTypingManually) {
-                // Check if this change came from voice or typing
-                // If value length increased by more than 1, likely from voice
-                // But to be safe, we'll stop listening
+            if (window.__activeRecognition && !isTypingManually) {
                 stopListening('Input changed');
             }
         });
 
-        // Click on mic button also triggers focus and starts listening
         micBtn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -340,24 +363,21 @@
     }
 
     // Initialize all voice inputs
-    function initVoiceInputs() {
+    async function initVoiceInputs() {
+        // Refresh preference before initializing
+        await updateVoiceInputStatus();
+
+        if (!window.__voiceInputEnabled) {
+            console.log('Voice input disabled in settings - not initializing');
+            return;
+        }
+
         const inputs = document.querySelectorAll('input.voice-input, input[data-voice="true"]');
         inputs.forEach(addVoiceInput);
 
-        // Also add to search input specifically
         const searchInput = document.getElementById('search_product');
         if (searchInput && !searchInput.hasAttribute('data-voice-attached')) {
             addVoiceInput(searchInput);
-        }
-    }
-
-    // Auto-focus on search input (optional)
-    function autoFocusSearch() {
-        const searchInput = document.getElementById('search_product');
-        if (searchInput) {
-            setTimeout(function () {
-                searchInput.focus();
-            }, 500);
         }
     }
 
@@ -367,11 +387,14 @@
             mutation.addedNodes.forEach(function (node) {
                 if (node.nodeType === 1) {
                     if (node.matches && node.matches('input.voice-input, input[data-voice="true"]')) {
-                        addVoiceInput(node);
+                        // Only add if voice is enabled
+                        if (window.__voiceInputEnabled) addVoiceInput(node);
                     }
                     if (node.querySelectorAll) {
                         const inputs = node.querySelectorAll('input.voice-input, input[data-voice="true"]');
-                        inputs.forEach(addVoiceInput);
+                        inputs.forEach(input => {
+                            if (window.__voiceInputEnabled) addVoiceInput(input);
+                        });
                     }
                 }
             });
@@ -390,4 +413,24 @@
         initVoiceInputs();
         observer.observe(document.body, { childList: true, subtree: true });
     }
+
+    // Re-check preference when page becomes visible (after settings change)
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            updateVoiceInputStatus().then(enabled => {
+                if (!enabled && window.__activeRecognition) {
+                    stopListening('Voice disabled via settings');
+                }
+            });
+        }
+    });
+
+    // Also check every 5 seconds (in case settings changed in another tab)
+    setInterval(function () {
+        updateVoiceInputStatus().then(enabled => {
+            if (!enabled && window.__activeRecognition) {
+                stopListening('Voice disabled via settings');
+            }
+        });
+    }, 5000);
 })();
