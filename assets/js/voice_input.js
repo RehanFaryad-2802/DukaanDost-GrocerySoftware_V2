@@ -20,14 +20,13 @@ window.stopAllVoiceInput = function () {
         input.removeAttribute('data-voice-attached');
     });
 };
-window.__voiceInputEnabled = true;
+// Use PHP-injected value directly — no async race condition
+window.__voiceInputEnabled = (typeof VOICE_INPUT_ENABLED !== 'undefined') ? VOICE_INPUT_ENABLED : true;
 
-// Function to check and update voice input status
 async function updateVoiceInputStatus() {
     try {
-        const response = await fetch('api/get_user_preference.php?key=voice_input');
-        const data = await response.json();
-        window.__voiceInputEnabled = data.value === 'on';
+        // Use the PHP-set value, no API call needed
+        window.__voiceInputEnabled = (typeof VOICE_INPUT_ENABLED !== 'undefined') ? VOICE_INPUT_ENABLED : true;
         console.log('Voice input:', window.__voiceInputEnabled ? 'ENABLED' : 'DISABLED');
 
         // If voice is disabled, stop any active listening

@@ -36,6 +36,13 @@ if (isset($_POST['save_settings'])) {
             $stmt->execute([$value, $key]);
         }
 
+        // Save voice input preference together with settings
+        $voice_val = isset($_POST['voice_input']) ? 'on' : 'off';
+        $stmt_vp = $pdo->prepare("INSERT INTO user_preferences (user_id, preference_key, preference_value) 
+                                  VALUES (?, 'voice_input', ?) 
+                                  ON DUPLICATE KEY UPDATE preference_value = ?");
+        $stmt_vp->execute([$_SESSION['user_id'], $voice_val, $voice_val]);
+
         $success = "Settings saved successfully!";
 
     } catch (Exception $e) {
@@ -148,6 +155,20 @@ while ($row = $stmt->fetch()) {
                         </div>
                     </div>
 
+                    <hr>
+                    <h6 class="mb-3">Interface Preferences</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong><i class="bi bi-mic"></i> Voice Input</strong><br>
+                            <small class="text-muted">Show mic button and voice fields on billing &amp; product
+                                pages</small>
+                        </div>
+                        <div class="form-check form-switch ms-3">
+                            <input class="form-check-input" type="checkbox" name="voice_input" id="voiceToggle"
+                                role="switch" style="width:2.5em;height:1.3em;" <?= $voice_input_enabled ? 'checked' : '' ?>>
+                        </div>
+                    </div>
+
                     <div class="mt-4">
                         <button type="submit" name="save_settings" class="btn btn-primary">
                             <i class="bi bi-save"></i> Save Settings
@@ -196,4 +217,5 @@ while ($row = $stmt->fetch()) {
         </div>
     </div>
 </div>
+
 <?php require_once 'includes/footer.php'; ?>

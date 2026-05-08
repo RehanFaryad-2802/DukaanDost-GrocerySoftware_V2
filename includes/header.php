@@ -1,6 +1,16 @@
 <?php
 require_once 'config/database.php';
 checkAuth();
+
+// Load voice input preference (available on all pages as $voice_input_enabled)
+$voice_input_enabled = true;
+if (isset($_SESSION['user_id'])) {
+    $stmt_vp = $pdo->prepare("SELECT preference_value FROM user_preferences WHERE user_id = ? AND preference_key = 'voice_input' ORDER BY id DESC LIMIT 1");
+    $stmt_vp->execute([$_SESSION['user_id']]);
+    $vp_val = $stmt_vp->fetchColumn();
+    if ($vp_val === 'off')
+        $voice_input_enabled = false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -116,12 +126,20 @@ checkAuth();
             }
         }
 
-        /* .urdu-text, */
-        /* *,
-        [dir="rtl"] {
-            font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
-        } */
+        #voiceBtn {
+            display: none !important;
+        }
     </style>
+    <script>
+        var VOICE_INPUT_ENABLED = <?= $voice_input_enabled ? 'true' : 'false' ?>;
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!VOICE_INPUT_ENABLED) {
+                document.querySelectorAll('[data-voice="true"]').forEach(function (el) {
+                    el.removeAttribute('data-voice');
+                });
+            }
+        });
+    </script>
 </head>
 
 <body>

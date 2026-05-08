@@ -8,10 +8,12 @@
             <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                 <i class="bi bi-x"></i>
             </button>
-            <button class="btn btn-outline-success" type="button" id="voiceBtn" onclick="toggleVoiceInput()"
-                title="🎤 Voice Add Products (Batch)">
-                <i class="bi bi-mic"></i>
-            </button>
+            <?php if ($voice_input_enabled): ?>
+                <button class="btn btn-outline-success" type="button" id="voiceBtn" onclick="toggleVoiceInput()"
+                    title="🎤 Voice Add Products (Batch)">
+                    <i class="bi bi-mic"></i>
+                </button>
+            <?php endif; ?>
         </div>
         <div id="search_results" class="list-group" style="max-height: 200px; overflow-y: auto;"></div>
 
