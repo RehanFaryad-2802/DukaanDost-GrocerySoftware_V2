@@ -44,6 +44,10 @@
                             <input dir="rtl" data-voice="true" type="text" name="name" class="form-control" required>
                         </div>
                         <div class="mb-3">
+                            <label>English / Phonetic Name <small class="text-muted">(optional — internal search only)</small></label>
+                            <input type="text" name="english_name" class="form-control" placeholder="e.g., chini, sugar, daal">
+                        </div>
+                        <div class="mb-3">
                             <label>Category</label>
                             <select name="category" class="form-select">
                                 <option value="">Select Category</option>
@@ -149,6 +153,10 @@
                         <div class="mb-3">
                             <label>Product Name *</label>
                             <input data-voice="true" dir="rtl" type="text" name="name" class="form-control" value="${product.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>English / Phonetic Name <small class="text-muted">(optional — internal search only)</small></label>
+                            <input type="text" name="english_name" class="form-control" value="${product.english_name || ''}" placeholder="e.g., chini, sugar, daal">
                         </div>
                         <div class="mb-3">
                             <label>Category</label>

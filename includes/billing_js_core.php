@@ -339,6 +339,9 @@
 
 
                 cart = [];
+                if (typeof resetLeaveProtection === 'function') {
+                    resetLeaveProtection();
+                }
                 if (typeof renderCart === 'function') renderCart();
                 if (typeof updateTotal === 'function') updateTotal();
 
@@ -377,6 +380,9 @@
             cart = [];
             renderCart();
             updateTotal();
+            if (typeof resetLeaveProtection === 'function') {
+                resetLeaveProtection();
+            }
             document.getElementById('amount_received').value = '0';
             document.getElementById('payment_status').style.display = 'none';
         }
@@ -651,6 +657,7 @@
             const products = await response.json();
 
             let html = '';
+            let count = 0;
 
             if (!products || products.length === 0) {
                 html = '<div class="col-12 text-muted text-center py-3">No products available</div>';
@@ -662,6 +669,7 @@
                                 <button class="btn btn-outline-primary w-100 h-100" 
                                         onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit || 'piece'}', ${product.current_stock || 0})"
                                         style="min-height: 60px; font-size: 12px; padding: 5px;">
+                                        <b> ${count + 1}. </b>
                                     <strong>${escapeHtml(product.name)}</strong>
                                 </button>
                             </div>
@@ -767,4 +775,91 @@
     });
 
 
+    (function () {
+        let quickProductsList = [];
+        let fKeysEnabled = true;
+        let preferenceChecked = false;
+
+
+        async function loadPreference() {
+            try {
+                const response = await fetch('api/get_user_preference.php?key=f_keys_shortcuts');
+                const data = await response.json();
+                fKeysEnabled = data.value === 'on';
+                preferenceChecked = true;
+                console.log('F-keys shortcuts:', fKeysEnabled ? 'ENABLED' : 'DISABLED');
+            } catch (e) {
+                fKeysEnabled = true;
+                preferenceChecked = true;
+                console.log('F-keys shortcuts: ENABLED (default)');
+            }
+        }
+
+
+        async function loadShortcutProducts() {
+            try {
+                const response = await fetch('api/search_product.php?mode=popular');
+                const products = await response.json();
+                quickProductsList = products.filter(p => p.status === 'active').slice(0, 10);
+                console.log('Quick products loaded for shortcuts:', quickProductsList.length);
+            } catch (error) {
+                console.error('Failed to load products for shortcuts:', error);
+            }
+        }
+
+
+        (async function () {
+            await loadPreference();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadShortcutProducts);
+            } else {
+                await loadShortcutProducts();
+            }
+        })();
+
+
+        document.addEventListener('keydown', function (e) {
+            const fKeyMap = {
+                'F1': 0,
+                'F2': 1,
+                'F3': 2,
+                'F4': 3,
+                'F5': 4,
+                'F6': 5,
+                'F7': 6,
+                'F8': 7,
+                'F9': 8,
+                'F10': 9
+            };
+
+            let index = null;
+
+
+            if (fKeyMap[e.key] !== undefined) {
+                index = fKeyMap[e.key];
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            else if (e.ctrlKey && (e.key === '1' || e.code === 'Digit1')) {
+                index = 0;
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            if (index !== null) {
+
+                if (!fKeysEnabled) {
+                    console.log('F-key pressed but shortcuts are disabled');
+                    return;
+                }
+
+                const product = quickProductsList[index];
+                if (product && typeof addToCart === 'function') {
+                    console.log('Shortcut added product:', product.name);
+                    addToCart(product.id, product.name, product.unit || 'piece', product.current_stock || 999999);
+                }
+            }
+        });
+    })();
 </script>

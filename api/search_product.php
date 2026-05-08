@@ -64,12 +64,12 @@ if ($mode === 'search' || empty($mode)) {
                 p.purchase_price,
                 p.status
             FROM products p
-            WHERE (p.name LIKE ? OR p.code LIKE ?) 
+            WHERE (p.name LIKE ? OR p.code LIKE ? OR p.english_name LIKE ?) 
             AND p.status = 'active' AND p.current_stock > 0
             ORDER BY name ASC
             LIMIT 50
         ");
-        $stmt->execute(["%$search%", "%$search%"]);
+        $stmt->execute(["%$search%", "%$search%", "%$search%"]);
     }
     $products = $stmt->fetchAll();
 

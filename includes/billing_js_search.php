@@ -3,6 +3,7 @@
 
     // Add to cart from quick products grid
     async function addToCart(productId, productName, unit, maxStock) {
+        customerType = customerType || 'retail';
         const quantity = prompt(`Enter quantity for ${productName} (${unit}):`, '1');
         if (!quantity || quantity <= 0) return;
         if (parseFloat(quantity) > maxStock) {
@@ -57,6 +58,7 @@
 
     // Add to cart with specific quantity
     async function addToCartWithQuantity(productId, productName, unit, maxStock, quantity) {
+        customerType = customerType || 'retail';
         const formData = new FormData();
         formData.append('product_id', productId);
         formData.append('quantity', quantity);
@@ -465,6 +467,7 @@
             const products = await response.json();
 
             let html = '';
+            let count = 0;
 
             if (products.length === 0) {
                 html = '<div class="col-12 text-muted text-center py-3">No products available</div>';
@@ -472,10 +475,13 @@
                 products.forEach(product => {
                     if (product.status === 'active') {
                         html += `
-                            <div class="col-2 mb-2">
-                                <button class="btn btn-outline-primary w-100 h-100" 
+                       <div class="col-2 mb-2">
+                                <button class="btn btn-outline-primary w-100 h-100 "
                                         onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.unit}', ${product.current_stock})"
-                                        style="min-height: 60px;">
+                                        style="min-height: 60px; position: relative;">
+                                            <b style="position: absolute; top: 5px; left: 5px; border-radius: 50%; background-color: ${count >= 10 ? '' : '#0d6efd'}; color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;"> 
+                                            ${count < 10 ? ++count : ""} 
+                                            </b>
                                     <strong>${escapeHtml(product.name)}</strong>
                                 </button>
                             </div>
@@ -562,9 +568,6 @@
             if (index === selectedResultIndex) item.scrollIntoView({ block: 'nearest' });
         });
     }
-    // ===============================================
-    // GLOBAL TYPING DETECTION - Auto focus search input
-    // ===============================================
 
     let typingBuffer = '';
     let typingTimeout = null;

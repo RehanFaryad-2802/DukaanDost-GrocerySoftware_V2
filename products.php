@@ -23,12 +23,13 @@ if (isset($_POST['add_product'])) {
         }
 
         // Insert product
+        $english_name = trim($_POST['english_name'] ?? '') ?: null;
         $stmt = $pdo->prepare("
-            INSERT INTO products (code, name, description, category, unit, 
+            INSERT INTO products (code, name, english_name, description, category, unit, 
                                 current_stock, min_stock_alert, purchase_price, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
         ");
-        $stmt->execute([$code, $name, $description, $category, $unit, $stock, $min_alert, $cost]);
+        $stmt->execute([$code, $name, $english_name, $description, $category, $unit, $stock, $min_alert, $cost]);
         $product_id = $pdo->lastInsertId();
 
         // Save packages if any

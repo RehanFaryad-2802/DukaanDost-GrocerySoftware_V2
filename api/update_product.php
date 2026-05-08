@@ -7,6 +7,7 @@ try {
     $id = $_POST['id'];
     $code = trim($_POST['code']);
     $name = trim($_POST['name']);
+    $english_name = trim($_POST['english_name'] ?? '') ?: null;
     $category = $_POST['category'] ?: null;
     $unit = $_POST['unit'];
     $description = $_POST['description'] ?: null;
@@ -40,6 +41,7 @@ try {
     $result = $stmt->execute([
         $code,
         $name,
+        $english_name,
         $category,
         $unit,
         $description,

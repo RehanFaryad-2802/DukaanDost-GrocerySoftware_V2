@@ -48,6 +48,15 @@ $settings = [];
 while ($row = $stmt->fetch()) {
     $settings[$row['setting_key']] = $row['setting_value'];
 }
+
+// Get user preferences for toggles
+$user_id = $_SESSION['user_id'];
+$stmt = $pdo->prepare("SELECT preference_key, preference_value FROM user_preferences WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$prefs = [];
+while ($row = $stmt->fetch()) {
+    $prefs[$row['preference_key']] = $row['preference_value'];
+}
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -168,38 +177,23 @@ while ($row = $stmt->fetch()) {
             <div class="card-body">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'export_products.php' ? 'active bg-primary' : ''; ?>"
-                            href="export_products.php">
+                        <a class="nav-link" href="export_products.php">
                             <i class="bi bi-box-arrow-up"></i> Export Products
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'import_products.php' ? 'active bg-primary' : ''; ?>"
-                            href="import_products.php">
+                        <a class="nav-link" href="import_products.php">
                             <i class="bi bi-upload"></i> Import Products
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sql/install.sql' ? 'active bg-primary' : ''; ?>"
-                            href="sql/install.sql">
+                        <a class="nav-link" href="sql/install.sql">
                             <i class="bi bi-hurricane"></i> Export Database Query
                         </a>
                     </li>
-                    <!-- <li class="nav-item">
-                        <a style="color:red;" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'restock_all.php' ? 'active bs-red' : ''; ?>" href="restock_all.php">
-                            <i class="bi bi-arrow-clockwise"></i></i> Restock All (999999)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a style="color:red;" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'reset_invoices.php' ? 'active bs-red' : ''; ?>" href="reset_invoices.php">
-                            <i class="bi bi-cart"></i></i> Reset Invoices
-                        </a>
-                    </li> -->
-
                 </ul>
             </div>
         </div>
     </div>
 </div>
-
 <?php require_once 'includes/footer.php'; ?>
