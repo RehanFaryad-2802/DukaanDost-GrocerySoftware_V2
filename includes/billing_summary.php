@@ -54,17 +54,6 @@
                 </div>
             </div>
 
-            <!-- Quick Amount Buttons -->
-            <div class="mb-3">
-                <label class="form-label small text-muted">Quick Amount</label>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setReceivedAmount('exact')">
-                        Exact
-                    </button>
-                </div>
-            </div>
-
-            <hr>
 
             <div class="mb-3 position-absolute" style="opacity: 0;z-index: -9999;">
                 <label>Payment Method</label>

@@ -27,6 +27,7 @@ try {
         UPDATE products SET 
             code = ?,
             name = ?,
+            english_name = ?,
             category = ?,
             unit = ?,
             description = ?,

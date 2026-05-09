@@ -22,6 +22,62 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$invoice_id]);
 $items = $stmt->fetchAll();
+// Load units with available labels
+$unitsMap = [];
+$uStmt = $pdo->query("SELECT symbol, name, name_urdu, type, name_singular, name_plural, sub_singular, sub_plural, sub_factor FROM units");
+while ($uRow = $uStmt->fetch()) {
+    $unitsMap[$uRow['symbol']] = $uRow;
+}
+
+function formatReceiptUnit($symbol, $qty, $unitsMap)
+{
+    // Special handling for "کلو" unit
+    if ($symbol === 'کلو') {
+        if ($qty == 0.250)
+            return 'پاؤ';
+        if ($qty == 0.050)
+            return 'چھٹانک';
+        if ($qty == 0.010)
+            return 'تولہ';
+    }
+
+    $u = $unitsMap[$symbol] ?? null;
+    if (!$u)
+        return $qty . ' ' . $symbol;
+
+    if (!empty($u['sub_factor']) && $qty < 1 && $qty > 0) {
+        $converted = $qty * $u['sub_factor'];
+        $formattedQty = (floor($converted) == $converted) ? (int) $converted : rtrim(rtrim(number_format($converted, 3, '.', ''), '0'), '.');
+        $label = ($converted == 1)
+            ? ($u['sub_singular'] ?: $u['sub_plural'] ?: $u['name_urdu'] ?: $u['name'])
+            : ($u['sub_plural'] ?: $u['sub_singular'] ?: $u['name_urdu'] ?: $u['name']);
+        return $formattedQty . ' ' . $label;
+    }
+
+    $label = !empty($u['name_urdu']) ? $u['name_urdu'] : $u['name'];
+    if ($qty == 1 && !empty($u['name_singular'])) {
+        $label = $u['name_singular'];
+    } elseif ($qty != 1 && !empty($u['name_plural'])) {
+        $label = $u['name_plural'];
+    }
+
+    $formattedQty = $qty;
+    if (floor($qty) == $qty) {
+        $formattedQty = (int) $qty;
+    } else {
+        $formattedQty = rtrim(rtrim(number_format($qty, 3, '.', ''), '0'), '.');
+    }
+
+    return $formattedQty . ' ' . $label;
+}
+
+function formatReceiptMoney($amount)
+{
+    if ($amount == floor($amount)) {
+        return number_format($amount, 0, '.', ',');
+    }
+    return number_format($amount, 2, '.', ',');
+}
 
 $stmt = $pdo->query("SELECT * FROM settings");
 $settings = [];
@@ -187,6 +243,11 @@ while ($row = $stmt->fetch()) {
             width: 50%;
         }
 
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 10%;
+        }
+
 
         @media print {
             body {
@@ -260,10 +321,10 @@ while ($row = $stmt->fetch()) {
     <table>
         <thead>
             <tr>
-                <th class="text-center">Amount</th>
-                <th class="text-center">Rate</th>
-                <th>Qty</th>
-                <th class="text-right item-col">Item</th>
+                <th class="text-center">رقم</th>
+                <th class="text-center">نرخ</th>
+                <th>تعداد</th>
+                <th class="text-right item-col">نام</th>
             </tr>
         </thead>
 
@@ -293,13 +354,9 @@ while ($row = $stmt->fetch()) {
                     <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
                     <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="" dir="rtl">
-                        <?php
-                        if (floor($qty) == $qty) {
-                            echo $qty . ' ' . $displayUnit;
-                        } else {
-                            echo rtrim(rtrim((string) $qty, '0'), '.') . ' ' . $displayUnit;
-                        }
-                        ?>
+                        <?php echo formatReceiptUnit($displayUnit, $qty, $unitsMap); ?>
+
+
                     </td>
                     <td dir="rtl" class="item-name item-col">
                         #<?php echo $item_number++ . ' '; ?>     <?php echo htmlspecialchars($item['product_name']); ?>
@@ -311,7 +368,6 @@ while ($row = $stmt->fetch()) {
     </table>
 
     <div class="divider"></div>
-
     <?php if ($invoice['discount_amount'] > 0): ?>
         <div class="info-row">
             <span>Discount:</span>

@@ -125,6 +125,7 @@ if (isset($_GET['delete'])) {
 }
 
 $category_filter = $_GET['category'] ?? '';
+$unit_filter = $_GET['unit'] ?? '';
 $search = $_GET['search'] ?? '';
 
 $sql = "SELECT * FROM products WHERE is_hidden = 0 AND 1=1";
@@ -135,8 +136,14 @@ if ($category_filter) {
     $params[] = $category_filter;
 }
 
+if ($unit_filter) {
+    $sql .= " AND unit = ?";
+    $params[] = $unit_filter;
+}
+
 if ($search) {
-    $sql .= " AND (name LIKE ? OR code LIKE ?)";
+    $sql .= " AND (name LIKE ? OR code LIKE ? OR english_name LIKE ?)";
+    $params[] = "%$search%";
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
@@ -148,6 +155,7 @@ $stmt->execute($params);
 $products = $stmt->fetchAll();
 
 $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fetchAll();
+$units = $pdo->query("SELECT DISTINCT symbol, name FROM units ORDER BY name")->fetchAll();
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -193,10 +201,21 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-2">
+                <label>Filter by Unit</label>
+                <select name="unit" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Units</option>
+                    <?php foreach ($units as $unit): ?>
+                        <option value="<?= htmlspecialchars($unit['symbol']) ?>" <?= $unit_filter == $unit['symbol'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($unit['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
                 <label>Search Product</label>
-                <input dir="rtl" type="text" name="search" class="form-control voice-input" placeholder="نام یا کوڈ۔۔۔"
-                    value="<?= htmlspecialchars($search) ?>">
+                <input dir="rtl" type="text" name="search" class="form-control voice-input"
+                    placeholder="نام، کوڈ یا انگریزی نام۔۔۔" value="<?= htmlspecialchars($search) ?>">
             </div>
             <div class="col-md-2">
                 <label>&nbsp;</label>
@@ -204,7 +223,7 @@ $cats = $pdo->query("SELECT name as category FROM categories ORDER BY name")->fe
                     <i class="bi bi-search"></i> Search
                 </button>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label>&nbsp;</label>
                 <div>
                     <a href="products.php" class="btn btn-outline-secondary">Reset</a>

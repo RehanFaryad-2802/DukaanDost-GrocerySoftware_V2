@@ -1,77 +1,77 @@
 <script>
     <?php if ($editing_invoice): ?>
-        (async function () {
+            (async function () {
 
-            customerType = '<?php echo $editing_invoice['customer_type']; ?>';
-            document.getElementById('customer_type').value = customerType;
-            updateCustomerType();
+                customerType = '<?php echo $editing_invoice['customer_type']; ?>';
+                document.getElementById('customer_type').value = customerType;
+                updateCustomerType();
 
-            document.getElementById('customer_name').value = '<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>';
-            document.getElementById('customer_phone').value = '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>';
+                document.getElementById('customer_name').value = '<?php echo addslashes($editing_invoice['customer_name'] ?? ''); ?>';
+                document.getElementById('customer_phone').value = '<?php echo addslashes($editing_invoice['customer_phone'] ?? ''); ?>';
 
-            const rawCart = <?php echo json_encode($editing_invoice['items']); ?>;
-            cart = [];
+                const rawCart = <?php echo json_encode($editing_invoice['items']); ?>;
+                cart = [];
 
-            for (const item of rawCart) {
-                let productUnit = 'Piece';
-                try {
-                    const response = await fetch(`api/get_product.php?id=${item.product_id}`);
-                    const product = await response.json();
-                    productUnit = product.unit || 'Piece';
-                } catch (e) { }
+                for (const item of rawCart) {
+                    let productUnit = 'Piece';
+                    try {
+                        const response = await fetch(`api/get_product.php?id=${item.product_id}`);
+                        const product = await response.json();
+                        productUnit = product.unit || 'Piece';
+                    } catch (e) { }
 
-                cart.push({
-                    product_id: parseInt(item.product_id) || 0,
-                    product_name: item.product_name,
-                    base_unit: productUnit,
-                    display_unit: productUnit,
-                    actual_quantity: parseFloat(item.quantity) || 0,
-                    display_quantity: parseFloat(item.quantity) || 0,
-                    unit_price: parseFloat(item.unit_price) || 0,
-                    total_price: parseFloat(item.total_price) || 0,
-                    tier_info: item.tier_info || '',
-                    max_stock: 999999,
-                    package_multiplier: 1
-                });
-            }
+                    cart.push({
+                        product_id: parseInt(item.product_id) || 0,
+                        product_name: item.product_name,
+                        base_unit: productUnit,
+                        display_unit: productUnit,
+                        actual_quantity: parseFloat(item.quantity) || 0,
+                        display_quantity: parseFloat(item.quantity) || 0,
+                        unit_price: parseFloat(item.unit_price) || 0,
+                        total_price: parseFloat(item.total_price) || 0,
+                        tier_info: item.tier_info || '',
+                        max_stock: 999999,
+                        package_multiplier: 1
+                    });
+                }
 
 
-            renderCart();
-            updateTotal();
+                renderCart();
+                updateTotal();
 
-            // Change button to Update mode
-            const completeBtn = document.getElementById('completeSaleBtn');
-            if (completeBtn) {
-                completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Invoice (F12)';
-                completeBtn.className = 'btn btn-warning btn-lg w-100 mb-2';
-            }
+                // Change button to Update mode
+                const completeBtn = document.getElementById('completeSaleBtn');
+                if (completeBtn) {
+                    completeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Invoice (F12)';
+                    completeBtn.className = 'btn btn-warning btn-lg w-100 mb-2';
+                }
 
-            // Show edit banner
-            const banner = document.createElement('div');
-            banner.className = 'alert alert-warning mb-3';
-            banner.innerHTML = `
+                // Show edit banner
+                const banner = document.createElement('div');
+                banner.className = 'alert alert-warning mb-3';
+                banner.innerHTML = `
                 <i class="bi bi-pencil-square"></i> 
                 <strong>Editing Invoice:</strong> <?php echo $editing_invoice['invoice_no']; ?> 
                 <small class="ms-2">(Changes will create a new invoice version)</small>
                 <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
             `;
-            const mainContainer = document.querySelector('.row');
-            if (mainContainer) mainContainer.insertBefore(banner, mainContainer.firstChild);
+                const mainContainer = document.querySelector('.row');
+                if (mainContainer) mainContainer.insertBefore(banner, mainContainer.firstChild);
 
-            window.EDIT_MODE = true;
-            window.OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
+                window.EDIT_MODE = true;
+                window.OLD_INVOICE_ID = <?php echo $editing_invoice['id']; ?>;
 
-            // Override completeSale for edit mode
-            window.originalCompleteSale = completeSale;
-            completeSale = async function () {
-                await updateExistingInvoice(window.OLD_INVOICE_ID);
-            };
+                // Override completeSale for edit mode
+                window.originalCompleteSale = completeSale;
+                completeSale = async function () {
+                    await updateExistingInvoice(window.OLD_INVOICE_ID);
+                };
 
-            // Hide payment section in edit mode
-            const paymentSection = document.getElementById('payment_method').closest('.mb-3');
-            if (paymentSection) paymentSection.style.display = 'none';
+                // Hide payment section in edit mode
+                const paymentSection = document.getElementById('payment_method').closest('.mb-3');
+                if (paymentSection) paymentSection.style.display = 'none';
 
-        })();
+            })();
     <?php endif; ?>
 
     async function updateExistingInvoice(oldInvoiceId) {
@@ -141,10 +141,6 @@
 
         if (paymentMethod !== 'cash') {
             document.getElementById('amount_received').value = total;
-        } else if (received < total) {
-            showNotification('error', `Insufficient payment! Balance due: Rs. ${(total - received).toFixed(0)}`);
-            document.getElementById('amount_received').focus();
-            return;
         }
 
         await originalCompleteSale();

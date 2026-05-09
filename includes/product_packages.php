@@ -104,9 +104,12 @@
                                 <hr>
                                 <h6>Add New Package</h6>
                                 <div class="input-group mb-2">
-                                    <input type="text" id="new_package_name" class="form-control" placeholder="Name (e.g., Dozen)">
+                                    <select id="new_package_name" class="form-select">
+                                        <option value="">Select Unit</option>
+                                        ${unitsHtml}
+                                    </select>
                                     <span class="input-group-text">=</span>
-                                    <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)">
+                                    <input type="number" id="new_package_multiplier" class="form-control" placeholder="Qty (e.g., 12)" min="1">
                                     <button class="btn btn-primary" onclick="savePackage(${productId})">Add</button>
                                 </div>
                             </div>

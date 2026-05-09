@@ -33,6 +33,12 @@
                             <i class="bi bi-rulers"></i> Units
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'packages.php' ? 'active bg-primary' : ''; ?>"
+                            href="packages.php">
+                            <i class="bi bi-boxes"></i> Packages
+                        </a>
+                    </li>
                     <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
                         <li class="nav-item">
                             <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active bg-primary' : 'text-white'; ?>"
