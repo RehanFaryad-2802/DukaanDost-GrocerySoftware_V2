@@ -28,21 +28,46 @@
 
             const priceData = JSON.parse(text);
 
-            cart.unshift({
-                product_id: productId,
-                product_name: productName,
-                base_unit: unit,
-                display_unit: unit,
-                actual_quantity: parseFloat(quantity),
-                display_quantity: parseFloat(quantity),
-                unit_price: priceData.unit_price || 0,
-                total_price: priceData.total_price || 0,
-                tier_info: priceData.tier_info || '',
-                max_stock: maxStock,
-                package_multiplier: 1,
-                packages: null,
-                selected_package_id: null
-            });
+            // Check if product already exists in cart
+            const existingIndex = cart.findIndex(item => item.product_id === productId);
+
+            if (existingIndex >= 0) {
+                // Merge with existing item
+                const item = cart[existingIndex];
+                const newQty = (item.actual_quantity || 0) + parseFloat(quantity);
+
+                if (newQty > maxStock) {
+                    alert(`Only ${maxStock} ${unit} available!`);
+                    return;
+                }
+
+                item.actual_quantity = newQty;
+                if (item.package_multiplier && item.package_multiplier > 1) {
+                    item.display_quantity = newQty / item.package_multiplier;
+                } else {
+                    item.display_quantity = newQty;
+                }
+                item.unit_price = priceData.unit_price || 0;
+                item.total_price = (priceData.unit_price || 0) * newQty;
+                item.tier_info = priceData.tier_info || '';
+            } else {
+                // Add as new item
+                cart.unshift({
+                    product_id: productId,
+                    product_name: productName,
+                    base_unit: unit,
+                    display_unit: unit,
+                    actual_quantity: parseFloat(quantity),
+                    display_quantity: parseFloat(quantity),
+                    unit_price: priceData.unit_price || 0,
+                    total_price: priceData.total_price || 0,
+                    tier_info: priceData.tier_info || '',
+                    max_stock: maxStock,
+                    package_multiplier: 1,
+                    packages: null,
+                    selected_package_id: null
+                });
+            }
 
             renderCart();
             updateTotal();
