@@ -394,7 +394,7 @@
             formData.append('purchase_price', retailPrice * 0.8);
             formData.append('retail_price', retailPrice);
             formData.append('wholesale_price', wholesalePrice);
-            formData.append('wholesale_min_qty', '5');
+            formData.append('wholesale_min_qty', '0');
 
             const response = await fetch('api/quick_add_product.php', {
                 method: 'POST',
