@@ -23,7 +23,7 @@ if ($mode === 'popular') {
         LEFT JOIN invoice_items ii ON p.id = ii.product_id
         WHERE p.status = 'active' AND p.current_stock > 0
         GROUP BY p.id
-        ORDER BY total_sold DESC, p.name ASC
+        ORDER BY p.sort_order ASC, total_sold DESC, p.name ASC
         LIMIT 20
     ");
     $stmt->execute();
