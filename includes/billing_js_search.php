@@ -528,7 +528,7 @@
         if (quickAddTimeout) clearTimeout(quickAddTimeout);
         quickAddTimeout = setTimeout(() => {
             searchProduct(query);
-        }, 300);
+        }, 100);
     }
 
     function clearSearch() {

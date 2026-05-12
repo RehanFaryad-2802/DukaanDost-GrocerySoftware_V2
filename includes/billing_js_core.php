@@ -849,10 +849,6 @@
 
             if (index !== null) {
 
-                if (!fKeysEnabled) {
-                    console.log('F-key pressed but shortcuts are disabled');
-                    return;
-                }
 
                 const product = quickProductsList[index];
                 if (product && typeof addToCart === 'function') {

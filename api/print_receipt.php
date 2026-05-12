@@ -37,8 +37,14 @@ function formatReceiptUnit($symbol, $qty, $unitsMap)
             return 'پاؤ';
         if ($qty == 0.050)
             return 'چھٹانک';
-        if ($qty == 0.010)
-            return 'تولہ';
+        if ($qty == 0.125)
+            return 'ادھ پاؤ';
+        if ($qty == 0.750)
+            return 'تین پاؤ';
+        if ($qty == 0.375)
+            return 'ڈھیڑ پاؤ';
+        if ($qty == 1.250)
+            return 'سوا کلو';
     }
 
     $u = $unitsMap[$symbol] ?? null;
@@ -290,10 +296,7 @@ while ($row = $stmt->fetch()) {
     <div class="header">
         <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
         <p><?php echo $settings['store_address'] ?? ''; ?></p>
-        <p>Jandiala Sher Khan</p>
-        <p>Phone-1: 0309-9153780</p>
-        <p>Phone-2: 0303-6897661</p>
-        <p>Phone-3: 0307-6264034</p>
+        <p><?php echo $settings['store_phone'] ?? ''; ?></p>
         <?php if (!empty($settings['store_gst'])): ?>
             <p>GST: <?php echo $settings['store_gst']; ?></p>
         <?php endif; ?>
