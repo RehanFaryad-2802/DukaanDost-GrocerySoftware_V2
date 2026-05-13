@@ -605,16 +605,19 @@
         const isInput = tagName === 'input' || tagName === 'textarea';
         const isContentEditable = activeElement.isContentEditable;
 
-        // Also check if any modal is open
-        const modalOpen = document.querySelector('.modal.show');
-
-        return (isInput || isContentEditable) && !modalOpen;
+        return (isInput || isContentEditable);
     }
 
     // Auto-focus search input when user starts typing
     function handleGlobalTyping(e) {
         // Ignore if typing in any input/textarea
         if (isTypingInInput()) {
+            return;
+        }
+
+        // Ignore if voice modal is open
+        const voiceModalEl = document.getElementById('voiceModal');
+        if (voiceModalEl && voiceModalEl.classList.contains('show')) {
             return;
         }
 

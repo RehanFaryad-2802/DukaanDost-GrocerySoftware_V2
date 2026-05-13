@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 $data = json_decode(file_get_contents('php://input'), true);
 $action = $data['action'] ?? '';
 
+// ── GET INVOICE ──────────────────────────────────────────────────────────────
 if ($action === 'get_invoice') {
     $invoice_id = $data['invoice_id'] ?? 0;
 
@@ -19,15 +20,8 @@ if ($action === 'get_invoice') {
     }
 
     $stmt = $pdo->prepare("
-        SELECT 
-            product_id, 
-            product_name, 
-            quantity, 
-            unit_price, 
-            total_price,
-            tier_info
-        FROM invoice_items 
-        WHERE invoice_id = ?
+        SELECT product_id, product_name, quantity, unit_price, total_price, tier_info
+        FROM invoice_items WHERE invoice_id = ?
     ");
     $stmt->execute([$invoice_id]);
     $items = $stmt->fetchAll();
@@ -35,97 +29,108 @@ if ($action === 'get_invoice') {
     echo json_encode([
         'success' => true,
         'invoice' => [
-            'id' => $invoice['id'],
-            'invoice_no' => $invoice['invoice_no'],
-            'customer_name' => $invoice['customer_name'],
+            'id'             => $invoice['id'],
+            'invoice_no'     => $invoice['invoice_no'],
+            'customer_name'  => $invoice['customer_name'],
             'customer_phone' => $invoice['customer_phone'],
-            'customer_type' => $invoice['customer_type'],
-            'subtotal' => $invoice['subtotal'],
-            'discount_amount' => $invoice['discount_amount'],
-            'total_amount' => $invoice['total_amount'],
+            'customer_type'  => $invoice['customer_type'],
+            'subtotal'       => $invoice['subtotal'],
+            'discount_amount'=> $invoice['discount_amount'],
+            'total_amount'   => $invoice['total_amount'],
             'payment_method' => $invoice['payment_method'],
-            'items' => $items
+            'items'          => $items
         ]
     ]);
 
+// ── UPDATE INVOICE (true in-place edit) ──────────────────────────────────────
 } elseif ($action === 'update_invoice') {
-    // Update existing invoice (creates new version)
-    $old_invoice_id = $data['old_invoice_id'] ?? 0;
+    $old_invoice_id = intval($data['old_invoice_id'] ?? 0);
+
+    if (!$old_invoice_id) {
+        echo json_encode(['success' => false, 'error' => 'Invalid invoice ID']);
+        exit;
+    }
 
     try {
         $pdo->beginTransaction();
 
-        // Generate new invoice number
-        $stmt = $pdo->query("SELECT generate_invoice_no() as invoice_no");
-        $new_invoice_no = $stmt->fetch()['invoice_no'];
+        // 1. Restore stock from old items
+        $stmt = $pdo->prepare("SELECT product_id, quantity FROM invoice_items WHERE invoice_id = ?");
+        $stmt->execute([$old_invoice_id]);
+        $old_items = $stmt->fetchAll();
 
-        // Insert new invoice
+        foreach ($old_items as $old) {
+            if ($old['product_id']) {
+                $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock + ? WHERE id = ?");
+                $stmt->execute([$old['quantity'], $old['product_id']]);
+            }
+        }
+
+        // 2. Delete old items
+        $stmt = $pdo->prepare("DELETE FROM invoice_items WHERE invoice_id = ?");
+        $stmt->execute([$old_invoice_id]);
+
+        // 3. Update invoice header in place (keep same invoice_no)
         $stmt = $pdo->prepare("
-            INSERT INTO invoices (
-                invoice_no, customer_name, customer_phone, customer_type,
-                subtotal, discount_amount, total_amount, payment_method,
-                payment_status, created_by, edited_from, edit_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, 1)
+            UPDATE invoices SET
+                customer_name   = ?,
+                customer_phone  = ?,
+                customer_type   = ?,
+                subtotal        = ?,
+                discount_amount = ?,
+                total_amount    = ?,
+                edit_count      = COALESCE(edit_count, 0) + 1,
+                last_edited     = NOW()
+            WHERE id = ?
         ");
         $stmt->execute([
-            $new_invoice_no,
-            $data['customer_name'] ?? null,
+            $data['customer_name']  ?? null,
             $data['customer_phone'] ?? null,
             $data['customer_type'],
             $data['subtotal'],
             $data['discount'],
             $data['total'],
-            $data['payment_method'] ?? 'cash',
-            $_SESSION['user_id'],
             $old_invoice_id
         ]);
 
-        $new_invoice_id = $pdo->lastInsertId();
-
-        // Find this section in edit_invoice.php and update:
-
+        // 4. Insert new items and deduct stock
         foreach ($data['items'] as $item) {
-            // Insert invoice item
+            $product_id = intval($item['product_id'] ?? 0) ?: null;
+            $quantity   = floatval($item['quantity']   ?? 0);
+
             $stmt = $pdo->prepare("
-        INSERT INTO invoice_items (invoice_id, product_id, product_name, quantity, unit_price, total_price, tier_info)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-
-            $product_id = intval($item['product_id'] ?? 0);
-            $final_product_id = ($product_id > 0) ? $product_id : null;
-
+                INSERT INTO invoice_items 
+                    (invoice_id, product_id, product_name, quantity, unit_price, total_price, tier_info)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
             $stmt->execute([
-                $new_invoice_id,
-                $final_product_id,
+                $old_invoice_id,
+                $product_id,
                 $item['product_name'],
-                $item['quantity'],
+                $quantity,
                 $item['unit_price'],
                 $item['total_price'],
                 $item['tier_info'] ?? null
             ]);
 
-            // Update stock only for real products
-            if ($final_product_id !== null) {
+            if ($product_id) {
                 $stmt = $pdo->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
-                $stmt->execute([$item['quantity'], $final_product_id]);
+                $stmt->execute([$quantity, $product_id]);
             }
         }
 
-        // Mark old invoice as edited
-        $stmt = $pdo->prepare("
-            UPDATE invoices 
-            SET edit_count = edit_count + 1, last_edited = NOW() 
-            WHERE id = ?
-        ");
-        $stmt->execute([$old_invoice_id]);
-
         $pdo->commit();
 
+        // Get invoice_no to return
+        $stmt = $pdo->prepare("SELECT invoice_no FROM invoices WHERE id = ?");
+        $stmt->execute([$old_invoice_id]);
+        $inv_no = $stmt->fetchColumn();
+
         echo json_encode([
-            'success' => true,
-            'invoice_no' => $new_invoice_no,
-            'invoice_id' => $new_invoice_id,
-            'message' => 'Invoice updated successfully!'
+            'success'    => true,
+            'invoice_no' => $inv_no,
+            'invoice_id' => $old_invoice_id,
+            'message'    => 'Invoice ' . $inv_no . ' updated successfully!'
         ]);
 
     } catch (Exception $e) {
@@ -133,11 +138,11 @@ if ($action === 'get_invoice') {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
 
+// ── LIST EDITABLE INVOICES ───────────────────────────────────────────────────
 } elseif ($action === 'list_editable') {
-    // List recent invoices for editing
     $stmt = $pdo->query("
         SELECT 
-            i.id, i.invoice_no, i.customer_name, i.customer_type, 
+            i.id, i.invoice_no, i.customer_name, i.customer_type,
             i.total_amount, i.created_at, i.edit_count,
             u.full_name as created_by
         FROM invoices i
@@ -146,8 +151,6 @@ if ($action === 'get_invoice') {
         ORDER BY i.created_at DESC
         LIMIT 50
     ");
-    $invoices = $stmt->fetchAll();
-
-    echo json_encode(['success' => true, 'invoices' => $invoices]);
+    echo json_encode(['success' => true, 'invoices' => $stmt->fetchAll()]);
 }
 ?>

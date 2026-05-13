@@ -126,9 +126,11 @@ if (isset($_SESSION['user_id'])) {
             }
         }
 
-        #voiceBtn {
-            display: none !important;
-        }
+        <?php if (!$voice_input_enabled): ?>
+            #voiceBtn {
+                display: none !important;
+            }
+<?php endif; ?>
     </style>
     <script>
         var VOICE_INPUT_ENABLED = <?= $voice_input_enabled ? 'true' : 'false' ?>;
