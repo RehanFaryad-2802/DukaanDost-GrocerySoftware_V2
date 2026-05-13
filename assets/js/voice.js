@@ -324,17 +324,45 @@ function scoreMatch(productName, searchQuery) {
   const q = searchQuery.trim();
 
   if (p === q) return 100; // exact
-  if (p.includes(q) || q.includes(p)) return 80; // one contains other
 
-  // Word overlap scoring
+  // Count matching words
   const pWords = p.split(/\s+/).filter((w) => w.length > 1);
   const qWords = q.split(/\s+/).filter((w) => w.length > 1);
-  let matches = 0;
-  for (const qw of qWords) {
-    if (pWords.some((pw) => pw.includes(qw) || qw.includes(pw))) matches++;
-  }
+
   if (qWords.length === 0) return 0;
-  return Math.round((matches / qWords.length) * 70);
+
+  let matchedWords = 0;
+  let matchedChars = 0;
+
+  for (const qw of qWords) {
+    for (const pw of pWords) {
+      if (pw === qw) {
+        matchedWords += 2; // exact word = bonus
+        matchedChars += qw.length;
+        break;
+      } else if (pw.includes(qw) || qw.includes(pw)) {
+        matchedWords += 1;
+        matchedChars += Math.min(pw.length, qw.length);
+        break;
+      }
+    }
+  }
+
+  // Base score from word overlap
+  let score = Math.round((matchedWords / (qWords.length * 2)) * 80);
+
+  // Bonus: if matched characters cover most of query length
+  const queryCoverage = matchedChars / Math.max(q.length, 1);
+  score += Math.round(queryCoverage * 20);
+
+  // Penalty: if product name is much longer than query (likely wrong match)
+  const lengthRatio = q.length / Math.max(p.length, 1);
+  if (lengthRatio < 0.3) score = Math.round(score * 0.5);
+
+  // Penalty: if only 1 short word matched
+  if (matchedWords <= 1 && qWords.length > 1) score = Math.round(score * 0.4);
+
+  return Math.min(score, 99); // never 100 unless exact
 }
 
 // ===============================================
@@ -427,9 +455,9 @@ async function searchProductDeep(namePart) {
   // Strategy 1: full phrase
   let all = await searchAPI(namePart);
 
-  // Strategy 2: individual words (length >= 2)
+  // Strategy 2: individual words (length >= 3 only — avoid noise)
   if (all.length === 0) {
-    const words = namePart.split(/\s+/).filter((w) => w.length >= 2);
+    const words = namePart.split(/\s+/).filter((w) => w.length >= 3);
     for (const w of words) {
       const r = await searchAPI(w);
       all = [...all, ...r];
@@ -437,21 +465,19 @@ async function searchProductDeep(namePart) {
     all = dedup(all);
   }
 
-  // Strategy 3: character substrings (for very short/unclear words)
-  if (all.length === 0 && namePart.length >= 3) {
-    for (let i = 0; i <= namePart.length - 3; i++) {
+  // Strategy 3: substring chunks — ONLY if still nothing found
+  if (all.length === 0 && namePart.length >= 4) {
+    for (let i = 0; i <= namePart.length - 4; i++) {
       const chunk = namePart.substring(i, i + 4);
-      if (chunk.length >= 3) {
-        const r = await searchAPI(chunk);
-        all = [...all, ...r];
-      }
+      const r = await searchAPI(chunk);
+      all = [...all, ...r];
     }
     all = dedup(all);
   }
 
   if (all.length === 0) return { found: false };
 
-  // Score all results
+  // Score all
   const scored = all
     .map((p) => ({
       ...p,
@@ -460,15 +486,18 @@ async function searchProductDeep(namePart) {
     .sort((a, b) => b._score - a._score);
 
   const best = scored[0];
+
+  // MINIMUM CONFIDENCE THRESHOLD — reject bad matches
+  if (best._score < 25) return { found: false };
+
   const isExact = best.name === namePart;
-  const confidence = best._score;
 
   return {
     found: true,
     exactMatch: isExact,
-    confidence: confidence,
+    confidence: best._score,
     product: best,
-    allMatches: scored,
+    allMatches: scored.filter((p) => p._score >= 20), // only show reasonable options
   };
 }
 
