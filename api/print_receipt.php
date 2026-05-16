@@ -350,7 +350,6 @@ while ($row = $stmt->fetch()) {
                     $displayUnit = $product ? $product['unit'] : 'piece';
                 }
 
-                // Use display quantity if available, otherwise use actual quantity
                 $qty = (float) ($displayQty ?? $item['quantity']);
                 ?>
                 <tr>

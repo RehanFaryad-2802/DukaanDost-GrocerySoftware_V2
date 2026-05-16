@@ -9,7 +9,7 @@ let _unitsCache = {};
     units.forEach((u) => {
       _unitsCache[u.symbol] = u;
     });
-  } catch (e) {}
+  } catch (e) { }
 })();
 
 function formatUnit(symbol, qty) {
@@ -96,7 +96,7 @@ async function renderCart() {
     if (item.packages && item.packages.length > 0) {
       item.packages.forEach((pkg) => {
         const selected = item.selected_package_id == pkg.id ? "selected" : "";
-        packageOptions += `<option value="${pkg.id}" data-multiplier="${pkg.multiplier}" data-name="${pkg.package_name}" data-is-package="true" ${selected}>${pkg.package_name}</option>`;
+        packageOptions += `<option value="${pkg.id}" data-multiplier="${pkg.multiplier}" style="text-align:center;" dir="rtl" data-name="${pkg.package_name}" data-is-package="true" ${selected}>${pkg.package_name} ${Math.floor(pkg.multiplier)}</option>`;
       });
     }
 
@@ -123,26 +123,24 @@ async function renderCart() {
                     </select>
                 </td>
                 <td width="120">
-                    ${
-                      isAdmin
-                        ? `<input type="number" class="form-control form-control-sm cart-unit-price" 
+                    ${isAdmin
+        ? `<input type="number" class="form-control form-control-sm cart-unit-price" 
                                 data-index="${index}"
                                 value="${unitPrice}" step="0.01" 
                                 onchange="updateCartItemUnitPrice(${index}, this.value)"
                                 style="width: 100px; background-color: #fff3cd;">`
-                        : `<span class="cart-unit-price-display">Rs. ${unitPrice}</span>`
-                    }
+        : `<span class="cart-unit-price-display">Rs. ${unitPrice}</span>`
+      }
                 </td>
                 <td width="120">
-                    ${
-                      isAdmin
-                        ? `<input type="number" class="form-control form-control-sm cart-total" 
+                    ${isAdmin
+        ? `<input type="number" class="form-control form-control-sm cart-total" 
                                 data-index="${index}"
                                 value="${totalPrice}" step="0.01" 
                                 onchange="updateCartItemTotal(${index}, this.value)"
                                 style="width: 110px; background-color: #d1ecf1;">`
-                        : `<span class="cart-total-display">Rs. ${totalPrice}</span>`
-                    }
+        : `<span class="cart-total-display">Rs. ${totalPrice}</span>`
+      }
                 </td>
                 <td width="50">
                     <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
