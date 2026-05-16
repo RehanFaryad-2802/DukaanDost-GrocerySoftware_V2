@@ -316,7 +316,12 @@ while ($row = $stmt->fetch()) {
 
     <div class="info-row">
         <span>Total Items:
-            <?php echo count($items); ?>
+            <?php
+            $regularItems = array_filter($items, function ($item) {
+                return $item['product_name'] !== 'سابقہ';
+            });
+            echo count($regularItems);
+            ?>
         </span>
     </div>
     <div class="divider"></div>
@@ -335,14 +340,20 @@ while ($row = $stmt->fetch()) {
             <?php
             $total_items = 0;
             $item_number = 1;
+            $sabiqaItems = [];
+
             foreach ($items as $item):
+                // Separate سابقہ items
+                if ($item['product_name'] === 'سابقہ') {
+                    $sabiqaItems[] = $item;
+                    continue;
+                }
+
                 $total_items += $item['quantity'];
 
-                // First try to get display_unit from invoice_items
                 $displayUnit = $item['display_unit'] ?? null;
                 $displayQty = $item['display_quantity'] ?? null;
 
-                // If not saved, fallback to product's base unit
                 if (!$displayUnit) {
                     $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
                     $stmt->execute([$item['product_id']]);
@@ -357,11 +368,32 @@ while ($row = $stmt->fetch()) {
                     <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
                     <td class="" dir="rtl">
                         <?php echo formatReceiptUnit($displayUnit, $qty, $unitsMap); ?>
-
-
                     </td>
                     <td dir="rtl" class="item-name item-col">
                         #<?php echo $item_number++ . ' '; ?>     <?php echo htmlspecialchars($item['product_name']); ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+
+            <?php foreach ($sabiqaItems as $item):
+                $displayUnit = $item['display_unit'] ?? null;
+                $displayQty = $item['display_quantity'] ?? null;
+
+                if (!$displayUnit) {
+                    $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
+                    $stmt->execute([$item['product_id']]);
+                    $product = $stmt->fetch();
+                    $displayUnit = $product ? $product['unit'] : 'piece';
+                }
+
+                $qty = (float) ($displayQty ?? $item['quantity']);
+                ?>
+                <tr>
+                    <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
+                    <td class="text-center"></td>
+                    <td class="" dir="rtl"></td>
+                    <td dir="rtl" class="item-name item-col">
+                        ##<?php echo htmlspecialchars($item['product_name']); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -374,7 +406,7 @@ while ($row = $stmt->fetch()) {
         <div class="info-row">
             <span>Discount:</span>
             <span>
-                <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($invoice['discount_amount'], 2); ?>
+                <?php echo $settings['currency_symbol']; ?>     <?php echo number_format($invoice['discount_amount'], 2); ?>
             </span>
         </div>
     <?php endif; ?>
