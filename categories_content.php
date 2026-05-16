@@ -168,7 +168,8 @@ if (isset($_GET['view']) && $_GET['view'] == 'categories') {
                                 </td>
                                 <td>
                                     <strong>
-                                        <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($cat['stock_value'] ?? 0, 2); ?>
+                                        <?php echo $settings['currency_symbol']; ?>
+                                        <?php echo number_format($cat['stock_value'] ?? 0, 2); ?>
                                     </strong>
                                 </td>
                                 <td>
@@ -225,7 +226,7 @@ if (isset($_GET['view']) && $_GET['view'] == 'categories') {
                     SELECT id, name, code, current_stock 
                     FROM products 
                     WHERE category IS NULL OR category = ''
-                    LIMIT 20
+                    LIMIT 10
                 ");
                 $uncategorized = $stmt->fetchAll();
                 ?>
