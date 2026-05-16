@@ -137,7 +137,5 @@ async function deleteHeldInvoice(holdId) {
 }
 
 function editInvoice(invoiceId) {
-  if (confirm("Edit this invoice? A new version will be created.")) {
-    window.location.href = "billing.php?edit=" + invoiceId;
-  }
+  window.location.href = "billing.php?edit=" + invoiceId;
 }

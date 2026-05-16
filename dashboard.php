@@ -179,11 +179,8 @@ $recent_invoices = $stmt->fetchAll();
 <script>
     // Edit invoice - redirect to billing page with invoice data
     function editInvoice(invoiceId) {
-        if (confirm('Edit this invoice? A new version will be created.')) {
-            // Store invoice ID in session storage
-            sessionStorage.setItem('editing_invoice_id', invoiceId);
-            window.location.href = 'billing.php?edit=' + invoiceId;
-        }
+        sessionStorage.setItem('editing_invoice_id', invoiceId);
+        window.location.href = 'billing.php?edit=' + invoiceId;
     }
 
     // Show all editable invoices modal
