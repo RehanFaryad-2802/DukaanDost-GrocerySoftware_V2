@@ -26,8 +26,10 @@ $low_stock_count = 0;
 
 foreach ($products as $p) {
     $total_stock_value += $p['current_stock'] * $p['purchase_price'];
-    if ($p['status'] == 'active') $active_products++;
-    if ($p['current_stock'] <= $p['min_stock_alert']) $low_stock_count++;
+    if ($p['status'] == 'active')
+        $active_products++;
+    if ($p['current_stock'] <= $p['min_stock_alert'])
+        $low_stock_count++;
 }
 ?>
 
@@ -99,52 +101,56 @@ foreach ($products as $p) {
                 </thead>
                 <tbody>
                     <?php foreach ($products as $product): ?>
-                    <tr>
-                        <td><strong><?php echo $product['code']; ?></strong></td>
-                        <td>
-                            <?php echo $product['name']; ?>
-                            <?php if ($product['description']): ?>
-                                <br><small class="text-muted"><?php echo $product['description']; ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $product['category'] ?: '-'; ?></td>
-                        <td><?php echo $product['unit']; ?></td>
-                        <td>
-                            <?php 
-                            $stock_class = $product['current_stock'] <= $product['min_stock_alert'] ? 'danger' : 'success';
-                            ?>
-                            <span class="badge bg-<?php echo $stock_class; ?>">
-                                <?php echo $product['current_stock']; ?>
-                            </span>
-                            <?php if ($product['current_stock'] <= $product['min_stock_alert']): ?>
-                                <br><small class="text-danger">Low Stock!</small>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($product['purchase_price'], 2); ?></td>
-                        <td>
-                            <?php if ($product['wholesale_tiers'] > 0): ?>
-                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['min_wholesale_price'], 2); ?> - 
-                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['max_wholesale_price'], 2); ?>
-                                <br><small><?php echo $product['wholesale_tiers']; ?> tiers</small>
-                            <?php else: ?>
-                                <span class="text-muted">Not set</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($product['retail_tiers'] > 0): ?>
-                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['min_retail_price'], 2); ?> - 
-                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['max_retail_price'], 2); ?>
-                                <br><small><?php echo $product['retail_tiers']; ?> tiers</small>
-                            <?php else: ?>
-                                <span class="text-muted">Not set</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <span class="badge bg-<?php echo $product['status'] == 'active' ? 'success' : 'secondary'; ?>">
-                                <?php echo $product['status']; ?>
-                            </span>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td><strong><?php echo $product['code']; ?></strong></td>
+                            <td>
+                                <?php echo $product['name']; ?>
+                                <?php if ($product['description']): ?>
+                                    <br><small class="text-muted"><?php echo $product['description']; ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo $product['category'] ?: '-'; ?></td>
+                            <td><?php echo $product['unit']; ?></td>
+                            <td>
+                                <?php
+                                $stock_class = $product['current_stock'] <= $product['min_stock_alert'] ? 'danger' : 'success';
+                                ?>
+                                <span class="badge bg-<?php echo $stock_class; ?>">
+                                    <?php echo $product['current_stock']; ?>
+                                </span>
+                                <?php if ($product['current_stock'] <= $product['min_stock_alert']): ?>
+                                    <br><small class="text-danger">Low Stock!</small>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($product['purchase_price'], 2); ?>
+                            </td>
+                            <td>
+                                <?php if ($product['wholesale_tiers'] > 0): ?>
+                                    <?php echo $settings['currency_symbol']; ?>        <?php echo number_format($product['min_wholesale_price'], 2); ?>
+                                    -
+                                    <?php echo $settings['currency_symbol']; ?>        <?php echo number_format($product['max_wholesale_price'], 2); ?>
+                                    <br><small><?php echo $product['wholesale_tiers']; ?> tiers</small>
+                                <?php else: ?>
+                                    <span class="text-muted">Not set</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($product['retail_tiers'] > 0): ?>
+                                    <?php echo $settings['currency_symbol']; ?>        <?php echo number_format($product['min_retail_price'], 2); ?>
+                                    -
+                                    <?php echo $settings['currency_symbol']; ?>        <?php echo number_format($product['max_retail_price'], 2); ?>
+                                    <br><small><?php echo $product['retail_tiers']; ?> tiers</small>
+                                <?php else: ?>
+                                    <span class="text-muted">Not set</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge bg-<?php echo $product['status'] == 'active' ? 'success' : 'secondary'; ?>">
+                                    <?php echo $product['status']; ?>
+                                </span>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
@@ -174,40 +180,44 @@ foreach ($products as $p) {
             ORDER BY p.name, pt.customer_type, pt.min_quantity
         ");
         $tiers = $stmt->fetchAll();
-        
+
         $current_product = '';
         foreach ($tiers as $tier):
             if ($current_product != $tier['product_name']):
-                if ($current_product != '') echo '</tbody></table><br>';
+                if ($current_product != '')
+                    echo '</tbody></table><br>';
                 $current_product = $tier['product_name'];
-        ?>
-            <h6><?php echo $tier['product_name']; ?></h6>
-            <table class="table table-sm table-bordered">
-                <thead>
+                ?>
+                <h6><?php echo $tier['product_name']; ?></h6>
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Customer Type</th>
+                            <th>Min Qty (<?php echo $tier['unit']; ?>)</th>
+                            <th>Max Qty (<?php echo $tier['unit']; ?>)</th>
+                            <th>Price per <?php echo $tier['unit']; ?></th>
+                            <th>Package Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php endif; ?>
                     <tr>
-                        <th>Customer Type</th>
-                        <th>Min Qty (<?php echo $tier['unit']; ?>)</th>
-                        <th>Max Qty (<?php echo $tier['unit']; ?>)</th>
-                        <th>Price per <?php echo $tier['unit']; ?></th>
-                        <th>Package Price</th>
+                        <td>
+                            <span
+                                class="badge bg-<?php echo $tier['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>">
+                                <?php echo ucfirst($tier['customer_type']); ?>
+                            </span>
+                        </td>
+                        <td><?php echo $tier['min_quantity']; ?></td>
+                        <td><?php echo $tier['max_quantity'] ?? '∞'; ?></td>
+                        <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($tier['price_per_unit'], 2); ?>
+                        </td>
+                        <td><?php echo $tier['package_price'] ? $settings['currency_symbol'] . number_format($tier['package_price'], 2) : '-'; ?>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-        <?php endif; ?>
-                <tr>
-                    <td>
-                        <span class="badge bg-<?php echo $tier['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>">
-                            <?php echo ucfirst($tier['customer_type']); ?>
-                        </span>
-                    </td>
-                    <td><?php echo $tier['min_quantity']; ?></td>
-                    <td><?php echo $tier['max_quantity'] ?? '∞'; ?></td>
-                    <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($tier['price_per_unit'], 2); ?></td>
-                    <td><?php echo $tier['package_price'] ? '<?php echo $settings['currency_symbol']; ?>' . number_format($tier['package_price'], 2) : '-'; ?></td>
-                </tr>
-        <?php endforeach; ?>
-                </tbody>
-            </table>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
