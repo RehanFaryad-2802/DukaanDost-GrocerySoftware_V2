@@ -189,6 +189,9 @@ while ($row = $stmt->fetch()) {
                 <p><strong>Invoice Prefix:</strong> e.g., INV-000001</p>
                 <p><strong>Low Stock Alert:</strong> Show warning when stock falls below this</p>
                 <p><strong>Receipt Header/Footer:</strong> Custom messages on receipts</p>
+                <p><strong>
+                        &lt;br&gt;:
+                    </strong>Move content to new line.</p>
             </div>
         </div>
         <div class="card">

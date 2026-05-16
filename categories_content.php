@@ -167,7 +167,9 @@ if (isset($_GET['view']) && $_GET['view'] == 'categories') {
                                     <?php echo number_format($cat['total_stock'] ?? 0, 2); ?>
                                 </td>
                                 <td>
-                                    <strong>Rs. <?php echo number_format($cat['stock_value'] ?? 0, 2); ?></strong>
+                                    <strong>
+                                        <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($cat['stock_value'] ?? 0, 2); ?>
+                                    </strong>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">

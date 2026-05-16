@@ -24,10 +24,9 @@ async function showHeldInvoices() {
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            ${
-                              result.held_invoices.length === 0
-                                ? '<p class="text-center text-muted py-4">No held invoices</p>'
-                                : `<table class="table table-hover">
+                            ${result.held_invoices.length === 0
+        ? '<p class="text-center text-muted py-4">No held invoices</p>'
+        : `<table class="table table-hover">
                                     <thead>
                                         <tr>
                                             <th>Reference</th>
@@ -40,17 +39,17 @@ async function showHeldInvoices() {
                                     </thead>
                                     <tbody>
                                         ${result.held_invoices
-                                          .map((inv) => {
-                                            const cartData = JSON.parse(
-                                              inv.cart_data,
-                                            );
-                                            return `
+          .map((inv) => {
+            const cartData = JSON.parse(
+              inv.cart_data,
+            );
+            return `
                                                 <tr>
                                                     <td><strong>${inv.hold_reference}</strong><br><small>${new Date(inv.created_at).toLocaleString()}</small></td>
                                                     <td>${inv.customer_name || "Walk-in"}</td>
                                                     <td><span class="badge bg-${inv.customer_type === "wholesale" ? "success" : "info"}">${inv.customer_type}</span></td>
                                                     <td>${cartData.length} items</td>
-                                                    <td><strong>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
+                                                    <td><strong><?php echo $settings['currency_symbol']; ?>${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
                                                     <td>
                                                         <button class="btn btn-sm btn-success" onclick="resumeHeldInvoice(${inv.id})">
                                                             <i class="bi bi-play-circle"></i> Resume
@@ -61,11 +60,11 @@ async function showHeldInvoices() {
                                                     </td>
                                                 </tr>
                                             `;
-                                          })
-                                          .join("")}
+          })
+          .join("")}
                                     </tbody>
                                 </table>`
-                            }
+      }
                         </div>
                     </div>
                 </div>

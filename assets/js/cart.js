@@ -129,7 +129,7 @@ async function renderCart() {
                                 value="${unitPrice}" step="0.01" 
                                 onchange="updateCartItemUnitPrice(${index}, this.value)"
                                 style="width: 100px; background-color: #fff3cd;">`
-        : `<span class="cart-unit-price-display">Rs. ${unitPrice}</span>`
+        : `<span class="cart-unit-price-display"><?php echo $settings['currency_symbol']; ?>${unitPrice}</span>`
       }
                 </td>
                 <td width="120">
@@ -139,7 +139,7 @@ async function renderCart() {
                                 value="${totalPrice}" step="0.01" 
                                 onchange="updateCartItemTotal(${index}, this.value)"
                                 style="width: 110px; background-color: #d1ecf1;">`
-        : `<span class="cart-total-display">Rs. ${totalPrice}</span>`
+        : `<span class="cart-total-display"><?php echo $settings['currency_symbol']; ?>${totalPrice}</span>`
       }
                 </td>
                 <td width="50">
@@ -292,7 +292,7 @@ async function updateCartItemUnitPrice(index, newUnitPrice) {
   if (typeof showNotification === "function") {
     showNotification(
       "success",
-      `Unit price changed to Rs. ${newUnitPrice.toFixed(2)}`,
+      `Unit price changed to <?php echo $settings['currency_symbol']; ?>${newUnitPrice.toFixed(2)}`,
     );
   }
 }
@@ -369,7 +369,7 @@ async function updateCartItemTotal(index, newTotal) {
   if (typeof showNotification === "function") {
     showNotification(
       "success",
-      `Total set to Rs. ${newTotal.toFixed(2)} → Quantity: ${qtyDisplay} ${item.display_unit}`,
+      `Total set to <?php echo $settings['currency_symbol']; ?>${newTotal.toFixed(2)} → Quantity: ${qtyDisplay} ${item.display_unit}`,
     );
   }
 }
@@ -428,7 +428,7 @@ function checkCartBeforeLeave() {
       typeof getGrandTotal === "function" ? getGrandTotal() : 0;
 
     return (
-      `⚠️ You have ${itemCount} item(s) in your cart (Total: Rs. ${totalAmount.toFixed(2)})\n\n` +
+      `⚠️ You have ${itemCount} item(s) in your cart (Total: <?php echo $settings['currency_symbol']; ?>${totalAmount.toFixed(2)})\n\n` +
       `Leaving this page will LOSE all unsaved items!\n\n` +
       `• Click "Cancel" to stay on this page\n` +
       `• Click "Save to Held Bills" to save your cart\n` +
@@ -519,7 +519,7 @@ function showCartSaveModal(targetUrl) {
                         You have <strong class="text-danger">${itemCount} item(s)</strong> in your cart!
                     </p>
                     <p class="text-center text-muted">
-                        Total: <strong>Rs. ${total.toFixed(2)}</strong>
+                        Total: <strong><?php echo $settings['currency_symbol']; ?>${total.toFixed(2)}</strong>
                     </p>
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-circle"></i>

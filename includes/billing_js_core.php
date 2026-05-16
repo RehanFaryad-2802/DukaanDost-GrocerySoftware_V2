@@ -65,7 +65,7 @@
             statusDiv.className = 'alert alert-success mb-3';
             statusLabel.textContent = '💵 Change to Return:';
             statusLabel.className = 'text-success';
-            balanceAmount.textContent = `Rs. ${change.toFixed(0)}`;
+            balanceAmount.textContent = `<?php echo $settings['currency_symbol']; ?>${change.toFixed(0)}`;
             balanceAmount.className = 'fw-bold fs-5 text-success';
             if (completeBtn) {
                 completeBtn.disabled = false;
@@ -76,7 +76,7 @@
             statusDiv.className = 'alert alert-danger mb-3';
             statusLabel.textContent = '⚠️ Balance Due:';
             statusLabel.className = 'text-danger';
-            balanceAmount.textContent = `Rs. ${due.toFixed(0)}`;
+            balanceAmount.textContent = `<?php echo $settings['currency_symbol']; ?>${due.toFixed(0)}`;
             balanceAmount.className = 'fw-bold fs-5 text-danger';
             if (completeBtn) {
                 completeBtn.disabled = true;
@@ -235,8 +235,8 @@
 
         const total = Math.max(0, subtotal - discount);
 
-        document.getElementById('subtotal').textContent = `Rs. ${subtotal.toFixed(2)}`;
-        document.getElementById('grand_total').textContent = `Rs. ${total.toFixed(2)}`;
+        document.getElementById('subtotal').textContent = `<?php echo $settings['currency_symbol']; ?>${subtotal.toFixed(2)}`;
+        document.getElementById('grand_total').textContent = `<?php echo $settings['currency_symbol']; ?>${total.toFixed(2)}`;
     }
 
     async function completeSale() {
@@ -542,7 +542,7 @@
                                                         <td>${inv.customer_name || 'Walk-in'}</td>
                                                         <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
                                                         <td>${cartData.length} items</td>
-                                                        <td><strong>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
+                                                        <td><strong><?php echo $settings['currency_symbol']; ?>${parseFloat(inv.total_amount).toFixed(2)}</strong></td>
                                                         <td><small>${new Date(inv.created_at).toLocaleString()}</small></td>
                                                         <td>
                                                             <button class="btn btn-sm btn-success" onclick="resumeHeldInvoice(${inv.id})">

@@ -117,8 +117,7 @@ $customers = $stmt->fetchAll();
                                 <?php echo ucfirst($customer['customer_type']); ?>
                             </span>
                         </td>
-                        <td><?php $settings['currency_symbol']
-                        ;
+                        <td><?php
                         echo number_format($customer['total_purchases'], 2); ?></td>
                         <td>
                             <div class="btn-group btn-group-sm">

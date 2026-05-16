@@ -373,13 +373,17 @@ while ($row = $stmt->fetch()) {
     <?php if ($invoice['discount_amount'] > 0): ?>
         <div class="info-row">
             <span>Discount:</span>
-            <span>Rs. <?php echo number_format($invoice['discount_amount'], 2); ?></span>
+            <span>
+                <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($invoice['discount_amount'], 2); ?>
+            </span>
         </div>
     <?php endif; ?>
 
 
     <div class="info-row total-row">
-        <span>Rs. <?php echo number_format($invoice['total_amount'], 0); ?></span>
+        <span>
+            <?php echo $settings['currency_symbol']; ?><?php echo number_format($invoice['total_amount'], 0); ?>
+        </span>
         <span dir="rtl">ٹوٹل:</span>
     </div>
 

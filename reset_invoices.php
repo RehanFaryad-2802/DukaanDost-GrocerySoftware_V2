@@ -142,7 +142,9 @@ $recent_invoices = $stmt->fetchAll();
                     </div>
                     <div class="col-md-3">
                         <h6 class="text-muted">Total Sales</h6>
-                        <div class="big-number text-success">Rs. <?php echo number_format($total_sales); ?></div>
+                        <div class="big-number text-success">
+                            <?php echo $settings['currency_symbol']; ?><?php echo number_format($total_sales); ?>
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <h6 class="text-muted">Held Invoices</h6>
@@ -173,7 +175,9 @@ $recent_invoices = $stmt->fetchAll();
                                 <tr>
                                     <td><strong><?php echo $inv['invoice_no']; ?></strong></td>
                                     <td><?php echo htmlspecialchars($inv['customer_name'] ?: 'Walk-in'); ?></td>
-                                    <td>Rs. <?php echo number_format($inv['total_amount']); ?></td>
+                                    <td>
+                                        <?php echo $settings['currency_symbol']; ?>        <?php echo number_format($inv['total_amount']); ?>
+                                    </td>
                                     <td><?php echo date('d-m-Y H:i', strtotime($inv['created_at'])); ?></td>
                                 </tr>
                             <?php endforeach; ?>

@@ -73,7 +73,7 @@ foreach ($products as $p) {
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h6>Stock Value (Cost)</h6>
-                <h3>Rs. <?php echo number_format($total_stock_value, 2); ?></h3>
+                <h3><?php echo $settings['currency_symbol']; ?><?php echo number_format($total_stock_value, 2); ?></h3>
             </div>
         </div>
     </div>
@@ -120,11 +120,11 @@ foreach ($products as $p) {
                                 <br><small class="text-danger">Low Stock!</small>
                             <?php endif; ?>
                         </td>
-                        <td>Rs. <?php echo number_format($product['purchase_price'], 2); ?></td>
+                        <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($product['purchase_price'], 2); ?></td>
                         <td>
                             <?php if ($product['wholesale_tiers'] > 0): ?>
-                                Rs. <?php echo number_format($product['min_wholesale_price'], 2); ?> - 
-                                Rs. <?php echo number_format($product['max_wholesale_price'], 2); ?>
+                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['min_wholesale_price'], 2); ?> - 
+                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['max_wholesale_price'], 2); ?>
                                 <br><small><?php echo $product['wholesale_tiers']; ?> tiers</small>
                             <?php else: ?>
                                 <span class="text-muted">Not set</span>
@@ -132,8 +132,8 @@ foreach ($products as $p) {
                         </td>
                         <td>
                             <?php if ($product['retail_tiers'] > 0): ?>
-                                Rs. <?php echo number_format($product['min_retail_price'], 2); ?> - 
-                                Rs. <?php echo number_format($product['max_retail_price'], 2); ?>
+                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['min_retail_price'], 2); ?> - 
+                                <?php echo $settings['currency_symbol']; ?><?php echo number_format($product['max_retail_price'], 2); ?>
                                 <br><small><?php echo $product['retail_tiers']; ?> tiers</small>
                             <?php else: ?>
                                 <span class="text-muted">Not set</span>
@@ -202,8 +202,8 @@ foreach ($products as $p) {
                     </td>
                     <td><?php echo $tier['min_quantity']; ?></td>
                     <td><?php echo $tier['max_quantity'] ?? '∞'; ?></td>
-                    <td>Rs. <?php echo number_format($tier['price_per_unit'], 2); ?></td>
-                    <td><?php echo $tier['package_price'] ? 'Rs. ' . number_format($tier['package_price'], 2) : '-'; ?></td>
+                    <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($tier['price_per_unit'], 2); ?></td>
+                    <td><?php echo $tier['package_price'] ? '<?php echo $settings['currency_symbol']; ?>' . number_format($tier['package_price'], 2) : '-'; ?></td>
                 </tr>
         <?php endforeach; ?>
                 </tbody>
