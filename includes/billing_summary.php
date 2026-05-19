@@ -40,9 +40,8 @@
                 </label>
                 <div class="input-group input-group-lg">
                     <span class="input-group-text">Rs.</span>
-                    <input type="number" id="amount_received" class="form-control text-end" style="font-size: 20px;"
-                        min="0" step="1" onkeyup="calculateChange()" onchange="calculateChange()"
-                        placeholder="رقم درج کریں۔۔۔">
+                    <input type="number" id="amount_received" class="form-control" style="font-size: 20px;" min="0"
+                        step="1" onkeyup="calculateChange()" onchange="calculateChange()" placeholder="Enter amount...">
                 </div>
             </div>
 
@@ -85,4 +84,7 @@
             </div>
         </div>
     </div>
+    <?php if (isset($settings['calculator_enabled']) && $settings['calculator_enabled'] === 'on'): ?>
+        <?php include 'billing_calculator.php'; ?>
+    <?php endif; ?>
 </div>

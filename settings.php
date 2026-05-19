@@ -17,6 +17,7 @@ if (isset($_POST['save_settings'])) {
     $receipt_footer = $_POST['receipt_footer'] ?? '';
     $currency_symbol = $_POST['currency_symbol'] ?? 'Rs.';
     $low_stock_alert = $_POST['low_stock_alert'] ?? 10;
+    $calculator_enabled = isset($_POST['calculator_enabled']) ? 'on' : 'off';
 
     try {
         $settings = [
@@ -28,12 +29,15 @@ if (isset($_POST['save_settings'])) {
             'receipt_header' => $receipt_header,
             'receipt_footer' => $receipt_footer,
             'currency_symbol' => $currency_symbol,
-            'low_stock_alert' => $low_stock_alert
+            'low_stock_alert' => $low_stock_alert,
+            'calculator_enabled' => $calculator_enabled
         ];
 
         foreach ($settings as $key => $value) {
-            $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = ?");
-            $stmt->execute([$value, $key]);
+            $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) 
+                           VALUES (?, ?) 
+                           ON DUPLICATE KEY UPDATE setting_value = ?");
+            $stmt->execute([$key, $value, $value]);
         }
 
         // Save voice input preference together with settings
@@ -166,6 +170,18 @@ while ($row = $stmt->fetch()) {
                         <div class="form-check form-switch ms-3">
                             <input class="form-check-input" type="checkbox" name="voice_input" id="voiceToggle"
                                 role="switch" style="width:2.5em;height:1.3em;" <?= $voice_input_enabled ? 'checked' : '' ?>>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong><i class="bi bi-calculator"></i> Show Calculator</strong><br>
+                            <small class="text-muted">Display the sidebar system calculator block on the billing
+                                page</small>
+                        </div>
+                        <div class="form-check form-switch ms-3">
+                            <input class="form-check-input" type="checkbox" name="calculator_enabled" id="calcToggle"
+                                role="switch" style="width:2.5em;height:1.3em;"
+                                <?= isset($settings['calculator_enabled']) && $settings['calculator_enabled'] === 'on' ? 'checked' : '' ?>>
                         </div>
                     </div>
 
