@@ -10,8 +10,10 @@ $start_date = $_GET['start_date'] ?? date('Y-m-d');
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $report_type = $_GET['report_type'] ?? 'daily';
 
-if (empty($start_date)) $start_date = date('Y-m-d');
-if (empty($end_date)) $end_date = date('Y-m-d');
+if (empty($start_date))
+    $start_date = date('Y-m-d');
+if (empty($end_date))
+    $end_date = date('Y-m-d');
 
 if ($report_type == 'daily') {
     $stmt = $pdo->prepare("
@@ -115,7 +117,8 @@ $today_summary = $stmt->fetch();
             <div class="col-md-3">
                 <label>Report Type</label>
                 <select name="report_type" class="form-select">
-                    <option value="daily" <?php echo $report_type == 'daily' ? 'selected' : ''; ?>>Daily Breakdown</option>
+                    <option value="daily" <?php echo $report_type == 'daily' ? 'selected' : ''; ?>>Daily Breakdown
+                    </option>
                     <option value="summary" <?php echo $report_type == 'summary' ? 'selected' : ''; ?>>Summary</option>
                 </select>
             </div>
@@ -152,9 +155,14 @@ $today_summary = $stmt->fetch();
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h6 class="card-title">Total Sales</h6>
-                <h3>Rs. <?php echo number_format($summary['total_sales'] ?? 0); ?></h3>
-                <small>Wholesale: Rs. <?php echo number_format($summary['wholesale_sales'] ?? 0); ?></small><br>
-                <small>Retail: Rs. <?php echo number_format($summary['retail_sales'] ?? 0); ?></small>
+                <h3><?php echo $settings['currency_symbol']; ?>
+                    <?php echo number_format($summary['total_sales'] ?? 0); ?></h3>
+                <small>Wholesale:
+                    <?php echo $settings['currency_symbol']; ?><?php echo number_format($summary['wholesale_sales'] ?? 0); ?>
+                </small><br>
+                <small>Retail:
+                    <?php echo $settings['currency_symbol']; ?><?php echo number_format($summary['retail_sales'] ?? 0); ?>
+                </small>
             </div>
         </div>
     </div>
@@ -162,7 +170,9 @@ $today_summary = $stmt->fetch();
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h6 class="card-title">Estimated Profit</h6>
-                <h3>Rs. <?php echo number_format($profit, 2); ?></h3>
+                <h3>
+                    <?php echo $settings['currency_symbol']; ?><?php echo number_format($profit, 2); ?>
+                </h3>
                 <small>Revenue - Cost</small>
             </div>
         </div>
@@ -171,7 +181,9 @@ $today_summary = $stmt->fetch();
         <div class="card bg-warning text-white">
             <div class="card-body">
                 <h6 class="card-title">Avg Bill Value</h6>
-                <h3>Rs. <?php echo number_format($summary['avg_bill_value'] ?? 0, 2); ?></h3>
+                <h3>
+                    <?php echo $settings['currency_symbol']; ?><?php echo number_format($summary['avg_bill_value'] ?? 0, 2); ?>
+                </h3>
                 <small>Per invoice</small>
             </div>
         </div>
@@ -180,35 +192,35 @@ $today_summary = $stmt->fetch();
 
 <!-- Daily Breakdown Table -->
 <?php if ($report_type == 'daily' && !empty($sales_data)): ?>
-<div class="card mb-4">
-    <div class="card-header bg-dark text-white">
-        <h5 class="mb-0">Daily Sales Breakdown</h5>
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Daily Sales Breakdown</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Bills</th>
+                        <th>Wholesale Sales</th>
+                        <th>Retail Sales</th>
+                        <th>Total Sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($sales_data as $day): ?>
+                        <tr>
+                            <td><strong><?php echo date('d-m-Y', strtotime($day['sale_date'])); ?></strong></td>
+                            <td><?php echo $day['total_bills']; ?></td>
+                            <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($day['wholesale_sales'] ?? 0); ?></td>
+                            <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($day['retail_sales'] ?? 0); ?></td>
+                            <td><strong><?php echo $settings['currency_symbol']; ?><?php echo number_format($day['total_sales']); ?></strong></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-striped table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Bills</th>
-                    <th>Wholesale Sales</th>
-                    <th>Retail Sales</th>
-                    <th>Total Sales</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($sales_data as $day): ?>
-                <tr>
-                    <td><strong><?php echo date('d-m-Y', strtotime($day['sale_date'])); ?></strong></td>
-                    <td><?php echo $day['total_bills']; ?></td>
-                    <td>Rs. <?php echo number_format($day['wholesale_sales'] ?? 0); ?></td>
-                    <td>Rs. <?php echo number_format($day['retail_sales'] ?? 0); ?></td>
-                    <td><strong>Rs. <?php echo number_format($day['total_sales']); ?></strong></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
 <?php endif; ?>
 
 <!-- Top Selling Products -->
@@ -218,64 +230,65 @@ $today_summary = $stmt->fetch();
     </div>
     <div class="card-body p-0">
         <?php if (!empty($top_products)): ?>
-        <table class="table table-striped mb-0">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Product</th>
-                    <th>Code</th>
-                    <th>Quantity Sold</th>
-                    <th>Revenue</th>
-                    <th>Invoices</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php $rank = 1; foreach ($top_products as $product): ?>
-                <tr>
-                    <td><?php echo $rank++; ?></td>
-                    <td><strong><?php echo htmlspecialchars($product['name']); ?></strong></td>
-                    <td><?php echo $product['code']; ?></td>
-                    <td><?php echo number_format($product['total_qty'], 2); ?></td>
-                    <td>Rs. <?php echo number_format($product['total_revenue']); ?></td>
-                    <td><?php echo $product['invoice_count']; ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Code</th>
+                        <th>Quantity Sold</th>
+                        <th>Revenue</th>
+                        <th>Invoices</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $rank = 1;
+                    foreach ($top_products as $product): ?>
+                        <tr>
+                            <td><?php echo $rank++; ?></td>
+                            <td><strong><?php echo htmlspecialchars($product['name']); ?></strong></td>
+                            <td><?php echo $product['code']; ?></td>
+                            <td><?php echo number_format($product['total_qty'], 2); ?></td>
+                            <td><?php echo $settings['currency_symbol']; ?><?php echo number_format($product['total_revenue']); ?></td>
+                            <td><?php echo $product['invoice_count']; ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php else: ?>
-        <p class="text-center text-muted py-4">No sales data for this period</p>
+            <p class="text-center text-muted py-4">No sales data for this period</p>
         <?php endif; ?>
     </div>
 </div>
 
 <script>
-function exportToCSV() {
-    // Get table data and download as CSV
-    const rows = [];
-    const table = document.querySelector('table');
-    const headers = [];
-    
-    table.querySelectorAll('thead th').forEach(th => {
-        headers.push(th.textContent.trim());
-    });
-    rows.push(headers.join(','));
-    
-    table.querySelectorAll('tbody tr').forEach(tr => {
-        const row = [];
-        tr.querySelectorAll('td').forEach(td => {
-            row.push('"' + td.textContent.trim().replace(/"/g, '""') + '"');
+    function exportToCSV() {
+        // Get table data and download as CSV
+        const rows = [];
+        const table = document.querySelector('table');
+        const headers = [];
+
+        table.querySelectorAll('thead th').forEach(th => {
+            headers.push(th.textContent.trim());
         });
-        rows.push(row.join(','));
-    });
-    
-    const csv = rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sales_report_<?php echo date('Y-m-d'); ?>.csv';
-    a.click();
-}
+        rows.push(headers.join(','));
+
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const row = [];
+            tr.querySelectorAll('td').forEach(td => {
+                row.push('"' + td.textContent.trim().replace(/"/g, '""') + '"');
+            });
+            rows.push(row.join(','));
+        });
+
+        const csv = rows.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sales_report_<?php echo date('Y-m-d'); ?>.csv';
+        a.click();
+    }
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

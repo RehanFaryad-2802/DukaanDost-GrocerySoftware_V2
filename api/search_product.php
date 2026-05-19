@@ -24,7 +24,7 @@ if ($mode === 'popular') {
         WHERE p.status = 'active' AND p.current_stock > 0
         GROUP BY p.id
         ORDER BY p.sort_order ASC, total_sold DESC, p.name ASC
-        LIMIT 20
+        LIMIT 12
     ");
     $stmt->execute();
     $products = $stmt->fetchAll();

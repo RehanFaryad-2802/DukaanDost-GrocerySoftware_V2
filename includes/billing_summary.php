@@ -50,7 +50,9 @@
             <div id="payment_status" class="alert alert-secondary mb-3" style="display: none;">
                 <div class="d-flex justify-content-between align-items-center">
                     <span id="status_label">Balance:</span>
-                    <span id="balance_amount" class="fw-bold fs-5">Rs. 0.00</span>
+                    <span id="balance_amount" class="fw-bold fs-5">
+                        <?php echo $settings['currency_symbol']; ?>0.00
+                    </span>
                 </div>
             </div>
 

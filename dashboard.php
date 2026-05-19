@@ -45,7 +45,9 @@ $recent_invoices = $stmt->fetchAll();
             <div class="card-body">
                 <h5 class="card-title">Wholesale Sales</h5>
                 <h2><?php echo $settings['currency_symbol']; ?>
-                    <?php echo number_format($today_sales['wholesale_sales'], 2); ?></h2>
+
+                    <?php echo number_format($today_sales['wholesale_sales'], 2); ?>
+                </h2>
             </div>
         </div>
     </div>
@@ -54,7 +56,8 @@ $recent_invoices = $stmt->fetchAll();
             <div class="card-body">
                 <h5 class="card-title">Retail Sales</h5>
                 <h2><?php echo $settings['currency_symbol']; ?>
-                    <?php echo number_format($today_sales['retail_sales'], 2); ?></h2>
+                    <?php echo number_format($today_sales['retail_sales'], 2); ?>
+                </h2>
             </div>
         </div>
     </div>
@@ -63,7 +66,8 @@ $recent_invoices = $stmt->fetchAll();
             <div class="card-body">
                 <h5 class="card-title">Total Sales</h5>
                 <h2><?php echo $settings['currency_symbol']; ?>
-                    <?php echo number_format($today_sales['total_sales'], 2); ?></h2>
+                    <?php echo number_format($today_sales['total_sales'], 2); ?>
+                </h2>
             </div>
         </div>
     </div>
@@ -91,7 +95,8 @@ $recent_invoices = $stmt->fetchAll();
                             <tr>
                                 <td><?php echo $product['name']; ?></td>
                                 <td class="text-danger"><?php echo $product['current_stock']; ?>
-                                    <?php echo $product['unit']; ?></td>
+                                    <?php echo $product['unit']; ?>
+                                </td>
                                 <td><?php echo $product['min_stock_alert']; ?>     <?php echo $product['unit']; ?></td>
                                 <td>
                                     <a href="products.php?edit=<?php echo $product['id']; ?>"
@@ -131,8 +136,9 @@ $recent_invoices = $stmt->fetchAll();
                                         class="badge bg-<?php echo $invoice['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>"><?php echo $invoice['customer_type']; ?></span>
                                 </td>
                                 <td><?php echo $settings['currency_symbol']; ?>
-                                    <?php echo number_format($invoice['total_amount'], 2); ?></td>
-                                
+                                    <?php echo number_format($invoice['total_amount'], 2); ?>
+                                </td>
+
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a href="api/print_receipt.php?id=<?php echo $invoice['id']; ?>" target="_blank"
@@ -164,7 +170,7 @@ $recent_invoices = $stmt->fetchAll();
 
 
 <style>
-    .recent_bill{
+    .recent_bill {
         height: 500px;
         overflow-y: auto;
     }
@@ -172,31 +178,28 @@ $recent_invoices = $stmt->fetchAll();
 
 <script>
     // Edit invoice - redirect to billing page with invoice data
-function editInvoice(invoiceId) {
-    if (confirm('Edit this invoice? A new version will be created.')) {
-        // Store invoice ID in session storage
+    function editInvoice(invoiceId) {
         sessionStorage.setItem('editing_invoice_id', invoiceId);
         window.location.href = 'billing.php?edit=' + invoiceId;
     }
-}
 
-// Show all editable invoices modal
-async function showEditableInvoices() {
-    try {
-        const response = await fetch('api/edit_invoice.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'list_editable'})
-        });
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-            alert('Failed to load invoices');
-            return;
-        }
-        
-        const modalHtml = `
+    // Show all editable invoices modal
+    async function showEditableInvoices() {
+        try {
+            const response = await fetch('api/edit_invoice.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'list_editable' })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                alert('Failed to load invoices');
+                return;
+            }
+
+            const modalHtml = `
             <div class="modal fade" id="editableInvoicesModal" tabindex="-1">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
@@ -223,7 +226,7 @@ async function showEditableInvoices() {
                                             <td><strong>${inv.invoice_no}</strong></td>
                                             <td>${inv.customer_name || 'Walk-in'}</td>
                                             <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
-                                            <td>Rs. ${parseFloat(inv.total_amount).toFixed(2)}</td>
+                                            <td><?php echo $settings['currency_symbol']; ?>${parseFloat(inv.total_amount).toFixed(2)}</td>
                                             <td>${new Date(inv.created_at).toLocaleDateString()}</td>
                                             <td>${inv.edit_count > 0 ? `<span class="badge bg-info">${inv.edit_count}</span>` : '-'}</td>
                                             <td>
@@ -243,12 +246,12 @@ async function showEditableInvoices() {
                 </div>
             </div>
         `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        new bootstrap.Modal(document.getElementById('editableInvoicesModal')).show();
-        
-    } catch (error) {
-        alert('Error loading invoices');
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            new bootstrap.Modal(document.getElementById('editableInvoicesModal')).show();
+
+        } catch (error) {
+            alert('Error loading invoices');
+        }
     }
-}
 </script>

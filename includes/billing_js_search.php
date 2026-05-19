@@ -280,7 +280,7 @@
                             <strong>${escapeHtml(product.name)}</strong>
                             <span class="badge bg-secondary">${product.code}</span>
                         </div>
-                        <small>Stock: ${product.current_stock} ${product.unit} | Price: ${product.pricing_tiers || 'N/A'}</small>
+                        <small>Price: ${product.pricing_tiers || 'N/A'}</small>
                     </a>
                 `;
             });

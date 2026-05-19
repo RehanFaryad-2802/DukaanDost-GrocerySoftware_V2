@@ -44,13 +44,20 @@
                                     class="product-checkbox" onchange="updateBulkDeleteBtn()"></td>
                             <td><small><?= htmlspecialchars($product['code']) ?></small></td>
                             <td dir="rtl" style="text-align: center;">
-                                <strong><?= htmlspecialchars($product['name']) ?></strong></td>
+                                <strong><?= htmlspecialchars($product['name']) ?></strong>
+                            </td>
                             <td style="text-align: center;"><?= htmlspecialchars($product['category'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($product['unit'] ?: 'Piece') ?></td>
                             <!-- <td><span class="badge bg-<?= $stock_class ?>"><?= $product['current_stock'] ?></span></td> -->
-                            <td>Rs. <?= number_format($product['purchase_price'] ?? 0, 0) ?></td>
-                            <td>Rs. <?= number_format($retail, 0) ?></td>
-                            <td>Rs. <?= number_format($wholesale, 0) ?></td>
+                            <td>
+                                <?php echo $settings['currency_symbol']; ?>    <?= number_format($product['purchase_price'] ?? 0, 0) ?>
+                            </td>
+                            <td>
+                                <?php echo $settings['currency_symbol']; ?>    <?= number_format($retail, 0) ?>
+                            </td>
+                            <td>
+                                <?php echo $settings['currency_symbol']; ?>    <?= number_format($wholesale, 0) ?>
+                            </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>

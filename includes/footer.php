@@ -15,7 +15,7 @@
     }, 3000);
 
     function formatCurrency(amount) {
-        return 'Rs. ' + parseFloat(amount).toFixed(2);
+        return '<?php echo $settings['currency_symbol']; ?>' + parseFloat(amount).toFixed(2);
     }
 
     function confirmDelete(message) {

@@ -33,20 +33,24 @@ $variants = $stmt->fetchAll();
     </thead>
     <tbody>
         <?php foreach ($variants as $v): ?>
-        <tr>
-            <td><?php echo htmlspecialchars($v['variant_name'] ?: '-'); ?></td>
-            <td><?php echo $v['unit']; ?></td>
-            <td><?php echo $v['weight_kg']; ?></td>
-            <td>Rs. <?php echo number_format($v['retail_price'], 2); ?></td>
-            <td>Rs. <?php echo number_format($v['wholesale_price'], 2); ?></td>
-            <td><?php echo $v['wholesale_min_qty']; ?></td>
-            <td><?php echo $v['current_stock']; ?></td>
-            <td>
-                <button class="btn btn-sm btn-danger" onclick="deleteVariant(<?php echo $v['id']; ?>)">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        </tr>
+            <tr>
+                <td><?php echo htmlspecialchars($v['variant_name'] ?: '-'); ?></td>
+                <td><?php echo $v['unit']; ?></td>
+                <td><?php echo $v['weight_kg']; ?></td>
+                <td>
+                    <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($v['retail_price'], 2); ?>
+                </td>
+                <td>
+                    <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($v['wholesale_price'], 2); ?>
+                </td>
+                <td><?php echo $v['wholesale_min_qty']; ?></td>
+                <td><?php echo $v['current_stock']; ?></td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteVariant(<?php echo $v['id']; ?>)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
