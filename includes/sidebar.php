@@ -23,22 +23,19 @@
                             <i class="bi bi-box"></i> Products
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li
+                        class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'categories.php' ? 'active bg-primary' : ''; ?>">
                         <a class="nav-link" href="categories.php">
                             <i class="bi bi-tags"></i> Categories
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li
+                        class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'units.php' ? 'active bg-primary' : ''; ?>">
                         <a class="nav-link" href="units.php">
                             <i class="bi bi-rulers"></i> Units
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'packages.php' ? 'active bg-primary' : ''; ?>"
-                            href="packages.php">
-                            <i class="bi bi-boxes"></i> Packages
-                        </a>
-                    </li>
+
                     <?php if ($_SESSION['user_role'] == 'admin' || $_SESSION['user_role'] == 'manager'): ?>
                         <li class="nav-item">
                             <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active bg-primary' : 'text-white'; ?>"

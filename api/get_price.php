@@ -13,38 +13,61 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare("
-        SELECT * FROM pricing_tiers 
-        WHERE product_id = ? AND customer_type = ?
-        ORDER BY min_quantity DESC
-    ");
-    $stmt->execute([$product_id, $customer_type]);
-    $all_tiers = $stmt->fetchAll();
+    // Get pricing fallback setting
+    $stmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'pricing_fallback'");
+    $stmt->execute();
+    $fallback_row = $stmt->fetch();
+    $pricing_fallback = ($fallback_row === false) ? 'on' : ($fallback_row['setting_value'] ?? 'on');
 
-    $unit_price = 0;
-    $tier_info = '';
-
-    foreach ($all_tiers as $tier) {
-        if ($quantity >= $tier['min_quantity']) {
-            if ($tier['max_quantity'] === null || $quantity <= $tier['max_quantity']) {
-                $unit_price = floatval($tier['price_per_unit']);
-                $tier_info = "Tier: {$tier['min_quantity']} - " . ($tier['max_quantity'] ?? '∞') . " units";
-                break;
-            }
-        }
-    }
-
-    if ($unit_price == 0 && !empty($all_tiers)) {
+    function findPrice($pdo, $product_id, $customer_type, $quantity)
+    {
         $stmt = $pdo->prepare("
             SELECT * FROM pricing_tiers 
             WHERE product_id = ? AND customer_type = ?
-            ORDER BY min_quantity ASC LIMIT 1
+            ORDER BY min_quantity DESC
         ");
         $stmt->execute([$product_id, $customer_type]);
-        $lowest_tier = $stmt->fetch();
-        if ($lowest_tier) {
-            $unit_price = floatval($lowest_tier['price_per_unit']);
-            $tier_info = "Tier: {$lowest_tier['min_quantity']} - " . ($lowest_tier['max_quantity'] ?? '∞') . " units (fallback)";
+        $all_tiers = $stmt->fetchAll();
+
+        $unit_price = 0;
+        $tier_info = '';
+
+        foreach ($all_tiers as $tier) {
+            $min = floatval($tier['min_quantity']);
+            $max = ($tier['max_quantity'] !== null && $tier['max_quantity'] !== '' && floatval($tier['max_quantity']) > 0)
+                ? floatval($tier['max_quantity'])
+                : null;
+
+            if ($quantity >= $min) {
+                if ($max === null || $quantity <= $max) {
+                    $unit_price = floatval($tier['price_per_unit']);
+                    $tier_info = "{$min} - " . ($max ?? '∞') . " {$customer_type}";
+                    break;
+                }
+            }
+        }
+
+        // Fallback to lowest tier if still no match
+        if ($unit_price == 0 && !empty($all_tiers)) {
+            $lowest = end($all_tiers); // last after DESC sort = lowest min_quantity
+            // re-sort to get actual lowest
+            usort($all_tiers, fn($a, $b) => floatval($a['min_quantity']) <=> floatval($b['min_quantity']));
+            $lowest = $all_tiers[0];
+            $unit_price = floatval($lowest['price_per_unit']);
+            $tier_info = floatval($lowest['min_quantity']) . " - ∞ {$customer_type} (fallback)";
+        }
+
+        return [$unit_price, $tier_info];
+    }
+
+    [$unit_price, $tier_info] = findPrice($pdo, $product_id, $customer_type, $quantity);
+
+    // If still no price found, try other customer type (if fallback enabled)
+    if ($unit_price == 0 && $pricing_fallback === 'on') {
+        $other_type = ($customer_type === 'retail') ? 'wholesale' : 'retail';
+        [$unit_price, $tier_info] = findPrice($pdo, $product_id, $other_type, $quantity);
+        if ($unit_price > 0) {
+            $tier_info .= ' (cross-type fallback)';
         }
     }
 

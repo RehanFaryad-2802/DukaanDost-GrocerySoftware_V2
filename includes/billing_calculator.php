@@ -76,9 +76,9 @@
     }
 
     function updateDisplay(expression, result) {
-        document.getElementById('calc-expression').textContent = expression || '0';
+        document.getElementById('calc-expression').innerHTML = expression || '0';
         const res = parseFloat(result) || 0;
-        document.getElementById('calc-result').textContent = `= ${formatNumber(res)}`;
+        document.getElementById('calc-result').textContent = `= ${formatNumber(parseFloat(res.toFixed(1)))}`;
     }
 
     function handleKeyPress(e) {
@@ -137,7 +137,7 @@
             updateDisplay(`${formatNumber(calcAnswer)} ${calcOperatorPending}`, calcAnswer);
         } else {
             const preview = calculate(calcAnswer, currentVal, calcOperatorPending);
-            updateDisplay(`${formatNumber(calcAnswer)} ${calcOperatorPending} ${input.value} =`, preview);
+            updateDisplay(`${formatNumber(calcAnswer)} ${calcOperatorPending} <span style="color:#FF2E2E;font-weight:bold;">${input.value}</span> =`, preview);
         }
     }
 

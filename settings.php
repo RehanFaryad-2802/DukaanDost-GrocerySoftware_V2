@@ -18,6 +18,7 @@ if (isset($_POST['save_settings'])) {
     $currency_symbol = $_POST['currency_symbol'] ?? 'Rs.';
     $low_stock_alert = $_POST['low_stock_alert'] ?? 10;
     $calculator_enabled = isset($_POST['calculator_enabled']) ? 'on' : 'off';
+    $pricing_fallback = isset($_POST['pricing_fallback']) ? 'on' : 'off';
 
     try {
         $settings = [
@@ -30,7 +31,8 @@ if (isset($_POST['save_settings'])) {
             'receipt_footer' => $receipt_footer,
             'currency_symbol' => $currency_symbol,
             'low_stock_alert' => $low_stock_alert,
-            'calculator_enabled' => $calculator_enabled
+            'calculator_enabled' => $calculator_enabled,
+            'pricing_fallback' => $pricing_fallback
         ];
 
         foreach ($settings as $key => $value) {
@@ -163,33 +165,47 @@ while ($row = $stmt->fetch()) {
                     <h6 class="mb-3">Interface Preferences</h6>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
+                            <strong><i class="bi bi-arrow-left-right"></i> Allow Pricing Fallback</strong><br>
+                            <small class="text-muted">If retail price not set, use wholesale price and vice
+                                versa</small>
+                        </div>
+                        <div class="form-check form-switch ms-3">
+                            <input class="form-check-input" type="checkbox" name="pricing_fallback"
+                                id="pricingFallbackToggle" role="switch" style="width:2.5em;height:1.3em;"
+                                <?= (($settings['pricing_fallback'] ?? 'on') === 'on') ? 'checked' : '' ?>>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
                             <strong><i class="bi bi-mic"></i> Voice Input</strong><br>
                             <small class="text-muted">Show mic button and voice fields on billing &amp; product
                                 pages</small>
                         </div>
                         <div class="form-check form-switch ms-3">
                             <input class="form-check-input" type="checkbox" name="voice_input" id="voiceToggle"
-                                role="switch" style="width:2.5em;height:1.3em;" <?= $voice_input_enabled ? 'checked' : '' ?>>
+                                role="switch" style="width:2.5em;height:1.3em;" <?= (($prefs['voice_input'] ?? 'on') === 'on') ? 'checked' : '' ?>> </div>
                         </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <strong><i class="bi bi-calculator"></i> Show Calculator</strong><br>
-                            <small class="text-muted">Display the sidebar system calculator block on the billing
-                                page</small>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong><i class="bi bi-calculator"></i> Show Calculator</strong><br>
+                                <small class="text-muted">Display the sidebar system calculator block on the billing
+                                    page</small>
+                            </div>
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" name="calculator_enabled"
+                                    id="calcToggle" role="switch" style="width:2.5em;height:1.3em;"
+                                    <?= isset($settings['calculator_enabled']) && $settings['calculator_enabled'] === 'on' ? 'checked' : '' ?>>
+                            </div>
                         </div>
-                        <div class="form-check form-switch ms-3">
-                            <input class="form-check-input" type="checkbox" name="calculator_enabled" id="calcToggle"
-                                role="switch" style="width:2.5em;height:1.3em;"
-                                <?= isset($settings['calculator_enabled']) && $settings['calculator_enabled'] === 'on' ? 'checked' : '' ?>>
-                        </div>
-                    </div>
+                        <hr>
 
-                    <div class="mt-4">
-                        <button type="submit" name="save_settings" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Save Settings
-                        </button>
-                    </div>
+                        <div class="mt-4">
+                            <button type="submit" name="save_settings" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
                 </form>
             </div>
         </div>

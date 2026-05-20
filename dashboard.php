@@ -7,7 +7,8 @@ $today_sales = getTodaySales($pdo);
 $low_stock = getLowStockProducts($pdo);
 
 $stmt = $pdo->prepare("
-    SELECT i.*, u.full_name 
+    SELECT i.*, u.full_name,
+        (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
     FROM invoices i
     JOIN users u ON i.created_by = u.id
     ORDER BY i.created_at DESC 
@@ -23,9 +24,9 @@ $recent_invoices = $stmt->fetchAll();
     <h1 class="h2">Dashboard</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Today</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Week</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Month</button>
+            <a href="reports.php?quick=today" class="btn btn-sm btn-outline-secondary">Today</a>
+            <a href="reports.php?quick=week" class="btn btn-sm btn-outline-secondary">Week</a>
+            <a href="reports.php?quick=month" class="btn btn-sm btn-outline-secondary">Month</a>
         </div>
     </div>
 </div>
@@ -123,6 +124,7 @@ $recent_invoices = $stmt->fetchAll();
                             <th>Invoice #</th>
                             <th>Customer</th>
                             <th>Type</th>
+                            <th>Items</th>
                             <th>Amount</th>
                             <th>Print</th>
                         </tr>
@@ -135,6 +137,7 @@ $recent_invoices = $stmt->fetchAll();
                                 <td><span
                                         class="badge bg-<?php echo $invoice['customer_type'] == 'wholesale' ? 'success' : 'info'; ?>"><?php echo $invoice['customer_type']; ?></span>
                                 </td>
+                                <td><span class="badge bg-secondary"><?php echo $invoice['item_count']; ?></span></td>
                                 <td><?php echo $settings['currency_symbol']; ?>
                                     <?php echo number_format($invoice['total_amount'], 2); ?>
                                 </td>

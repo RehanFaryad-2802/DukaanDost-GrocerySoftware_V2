@@ -41,11 +41,13 @@ $tiers = $stmt->fetchAll();
                     <span class="tier-min"><?php echo $tier['min_quantity']; ?></span>
                 </td>
                 <td>
-                    <span class="tier-max"><?php echo $tier['max_quantity'] ?? '∞'; ?></span>
+                    <span
+                        class="tier-max"><?php echo (!isset($tier['max_quantity']) || $tier['max_quantity'] === null || $tier['max_quantity'] === '') ? '∞' : $tier['max_quantity']; ?></span>
                 </td>
                 <td>
                     <span class="tier-price">
-                        <?php echo $settings['currency_symbol']; ?>    <?php echo number_format($tier['price_per_unit'], 2); ?>
+                        <?php echo $settings['currency_symbol']; ?>
+                        <?php echo number_format($tier['price_per_unit'], 2); ?>
                     </span>
                 </td>
                 <td>

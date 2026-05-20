@@ -15,7 +15,7 @@ try {
     $cost = floatval($_POST['purchase_price'] ?? 0);
     $retail = floatval($_POST['retail_price'] ?? 0);
     $wholesale = floatval($_POST['wholesale_price'] ?? 0);
-    $wholesale_min = floatval($_POST['wholesale_min_qty'] ?? 5);
+    $wholesale_min = floatval($_POST['wholesale_min_qty'] ?? 0);
 
     // Auto-fill missing tier: if only retail, use for wholesale too; if only wholesale, use for retail too
     if ($retail > 0 && $wholesale == 0) {
@@ -64,7 +64,7 @@ try {
     if ($retail > 0) {
         $stmt = $pdo->prepare("
             INSERT INTO pricing_tiers (product_id, customer_type, min_quantity, max_quantity, price_per_unit) 
-            VALUES (?, 'retail', 1, NULL, ?)
+            VALUES (?, 'retail', 0, NULL, ?)
         ");
         $stmt->execute([$product_id, $retail]);
     }

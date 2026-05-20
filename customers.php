@@ -63,8 +63,15 @@ if (isset($_GET['delete'])) {
 
 // Get all customers
 $stmt = $pdo->query("
-    SELECT * FROM customers 
-    ORDER BY name
+    SELECT c.*, 
+        COALESCE(SUM(i.total_amount), 0) as total_purchases
+    FROM customers c
+    LEFT JOIN invoices i ON (
+        i.customer_name = c.name 
+        OR (c.id = 1 AND (i.customer_name = 'Walk-in' OR i.customer_name = '' OR i.customer_name IS NULL))
+    )
+    GROUP BY c.id
+    ORDER BY c.name
 ");
 $customers = $stmt->fetchAll();
 ?>

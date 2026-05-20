@@ -9,7 +9,7 @@ let _unitsCache = {};
     units.forEach((u) => {
       _unitsCache[u.symbol] = u;
     });
-  } catch (e) { }
+  } catch (e) {}
 })();
 
 function formatUnit(symbol, qty) {
@@ -104,7 +104,17 @@ async function renderCart() {
             <tr data-cart-index="${index}">
                 <td style="min-width: 180px;">
                     <strong>${escapeHtml(item.product_name)}</strong>
-                    ${item.tier_info ? `<br><small class="text-muted">${item.tier_info}</small>` : ""}
+                    ${
+                      item.tier_info
+                        ? `<br><small class="${
+                            item.tier_info.includes("cross-type fallback")
+                              ? "text-danger fw-bold"
+                              : item.tier_info.includes("fallback")
+                                ? "text-warning fw-bold"
+                                : "text-muted"
+                          }">${item.tier_info}</small>`
+                        : ""
+                    }
                 </td>
                 <td width="100">
                     <input type="number" class="form-control form-control-sm cart-qty" 
@@ -123,24 +133,26 @@ async function renderCart() {
                     </select>
                 </td>
                 <td width="120">
-                    ${isAdmin
-        ? `<input type="number" class="form-control form-control-sm cart-unit-price" 
+                    ${
+                      isAdmin
+                        ? `<input type="number" class="form-control form-control-sm cart-unit-price" 
                                 data-index="${index}"
                                 value="${unitPrice}" step="0.01" 
                                 onchange="updateCartItemUnitPrice(${index}, this.value)"
                                 style="width: 100px; background-color: #fff3cd;">`
-        : `<span class="cart-unit-price-display"><?php echo $settings['currency_symbol']; ?>${unitPrice}</span>`
-      }
+                        : `<span class="cart-unit-price-display"><?php echo $settings['currency_symbol']; ?>${unitPrice}</span>`
+                    }
                 </td>
                 <td width="120">
-                    ${isAdmin
-        ? `<input type="number" class="form-control form-control-sm cart-total" 
+                    ${
+                      isAdmin
+                        ? `<input type="number" class="form-control form-control-sm cart-total" 
                                 data-index="${index}"
                                 value="${totalPrice}" step="0.01" 
                                 onchange="updateCartItemTotal(${index}, this.value)"
                                 style="width: 110px; background-color: #d1ecf1;">`
-        : `<span class="cart-total-display"><?php echo $settings['currency_symbol']; ?>${totalPrice}</span>`
-      }
+                        : `<span class="cart-total-display"><?php echo $settings['currency_symbol']; ?>${totalPrice}</span>`
+                    }
                 </td>
                 <td width="50">
                     <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
