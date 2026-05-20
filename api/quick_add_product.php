@@ -17,8 +17,15 @@ try {
     $wholesale = floatval($_POST['wholesale_price'] ?? 0);
     $wholesale_min = floatval($_POST['wholesale_min_qty'] ?? 5);
 
+    // Auto-fill missing tier: if only retail, use for wholesale too; if only wholesale, use for retail too
+    if ($retail > 0 && $wholesale == 0) {
+        $wholesale = $retail;
+    } elseif ($wholesale > 0 && $retail == 0) {
+        $retail = $wholesale;
+    }
+
     if (empty($name) || empty($unit) || $retail <= 0) {
-        echo json_encode(['success' => false, 'error' => 'Name, unit, and retail price are required']);
+        echo json_encode(['success' => false, 'error' => 'Name, unit, and at least one price (retail or wholesale) are required']);
         exit;
     }
 
@@ -53,16 +60,16 @@ try {
     $stmt->execute([$code, $name, $description, $category, $unit, $stock, $min_alert, $cost]);
     $product_id = $pdo->lastInsertId();
 
-    // Add retail pricing tier
+    // Add retail pricing tier (only if retail > 0)
     if ($retail > 0) {
         $stmt = $pdo->prepare("
             INSERT INTO pricing_tiers (product_id, customer_type, min_quantity, max_quantity, price_per_unit) 
-            VALUES (?, 'retail', 0, NULL, ?)
+            VALUES (?, 'retail', 1, NULL, ?)
         ");
         $stmt->execute([$product_id, $retail]);
     }
 
-    // Add wholesale pricing tier if provided
+    // Add wholesale pricing tier (only if wholesale > 0)
     if ($wholesale > 0) {
         $stmt = $pdo->prepare("
             INSERT INTO pricing_tiers (product_id, customer_type, min_quantity, max_quantity, price_per_unit) 
