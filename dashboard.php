@@ -187,6 +187,15 @@ $recent_invoices = $stmt->fetchAll();
     }
 
     // Show all editable invoices modal
+    function filterInvoiceTable(query) {
+        const rows = document.querySelectorAll('#editableInvoicesTable tbody tr');
+        const q = query.toLowerCase();
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(q) ? '' : 'none';
+        });
+    }
+
     async function showEditableInvoices() {
         try {
             const response = await fetch('api/edit_invoice.php', {
@@ -202,6 +211,9 @@ $recent_invoices = $stmt->fetchAll();
                 return;
             }
 
+            const existingModal = document.getElementById('editableInvoicesModal');
+            if (existingModal) existingModal.remove();
+
             const modalHtml = `
             <div class="modal fade" id="editableInvoicesModal" tabindex="-1">
                 <div class="modal-dialog modal-xl">
@@ -211,7 +223,12 @@ $recent_invoices = $stmt->fetchAll();
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <table class="table table-hover">
+                            <div class="mb-3">
+                                <input type="text" id="invoiceSearchInput" class="form-control"
+                                    placeholder="Search by invoice #, customer name..."
+                                    oninput="filterInvoiceTable(this.value)">
+                            </div>
+                            <table class="table table-hover" id="editableInvoicesTable">
                                 <thead>
                                     <tr>
                                         <th>Invoice #</th>
@@ -231,7 +248,7 @@ $recent_invoices = $stmt->fetchAll();
                                             <td><span class="badge bg-${inv.customer_type === 'wholesale' ? 'success' : 'info'}">${inv.customer_type}</span></td>
                                             <td><?php echo $settings['currency_symbol']; ?>${parseFloat(inv.total_amount).toFixed(2)}</td>
                                             <td>${new Date(inv.created_at).toLocaleDateString()}</td>
-                                            <td>${inv.edit_count > 0 ? `<span class="badge bg-info">${inv.edit_count}</span>` : '-'}</td>
+                                            <td>${inv.edit_count > 0 ? '<span class="badge bg-info">' + inv.edit_count + '</span>' : '-'}</td>
                                             <td>
                                                 <button class="btn btn-sm btn-warning" onclick="editInvoice(${inv.id})">
                                                     <i class="bi bi-pencil"></i> Edit
@@ -247,11 +264,14 @@ $recent_invoices = $stmt->fetchAll();
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
 
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             new bootstrap.Modal(document.getElementById('editableInvoicesModal')).show();
+
+            document.getElementById('editableInvoicesModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
 
         } catch (error) {
             alert('Error loading invoices');

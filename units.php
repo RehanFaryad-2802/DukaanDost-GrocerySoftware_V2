@@ -173,7 +173,8 @@ $units = $pdo->query("SELECT * FROM units ORDER BY type, name")->fetchAll();
                             ?>
                             <tr>
                                 <td>
-                                    <a href="products.php?unit=<?= htmlspecialchars($unit['symbol']) ?>"
+                                    <a style="color: black"
+                                        href="products.php?unit=<?= htmlspecialchars($unit['symbol']) ?>"
                                         class="text-decoration-none">
                                         <strong dir="rtl"><?php echo htmlspecialchars($unit['name']); ?></strong>
                                     </a>

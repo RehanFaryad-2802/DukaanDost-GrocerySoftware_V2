@@ -32,13 +32,13 @@ if (isset($_POST['save_settings'])) {
             'currency_symbol' => $currency_symbol,
             'low_stock_alert' => $low_stock_alert,
             'calculator_enabled' => $calculator_enabled,
-            'pricing_fallback' => $pricing_fallback
+            'pricing_fallback' => $pricing_fallback,
+            'hide_high_price_retail' => isset($_POST['hide_high_price_retail']) ? 'on' : 'off',
+            'hide_high_price_threshold' => floatval($_POST['hide_high_price_threshold'] ?? 1000)
         ];
 
         foreach ($settings as $key => $value) {
-            $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) 
-                           VALUES (?, ?) 
-                           ON DUPLICATE KEY UPDATE setting_value = ?");
+            $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
             $stmt->execute([$key, $value, $value]);
         }
 
@@ -91,10 +91,10 @@ while ($row = $stmt->fetch()) {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
-
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
+<!-- no flex wrap -->
+<div class="row ">
+    <div class="col-md-12 row">
+        <div class="card col-md-8">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-shop"></i> Store Settings</h5>
             </div>
@@ -129,7 +129,7 @@ while ($row = $stmt->fetch()) {
                     </div>
 
                     <hr>
-                    <h6 class="mb-3">Invoice Settings</h6>
+                    <h4 class="mb-3">Invoice Settings</h4>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -146,45 +146,74 @@ while ($row = $stmt->fetch()) {
                     </div>
 
                     <hr>
-                    <h6 class="mb-3">Receipt Settings</h6>
+                    <h4 class="mb-3">Receipt Settings</h4>
 
                     <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label>Receipt Header</label>
-                            <input type="text" name="receipt_header" class="form-control"
-                                value="<?php echo htmlspecialchars($settings['receipt_header'] ?? 'Thank you for shopping!'); ?>">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Receipt Header</label>
+                                <input type="text" name="receipt_header" class="form-control"
+                                    value="<?php echo htmlspecialchars($settings['receipt_header'] ?? 'Thank you for shopping!'); ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Receipt Footer</label>
+                                <input type="text" name="receipt_footer" class="form-control"
+                                    value="<?php echo htmlspecialchars($settings['receipt_footer'] ?? 'Goods once sold cannot be returned'); ?>">
+                            </div>
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <label>Receipt Footer</label>
-                            <input type="text" name="receipt_footer" class="form-control"
-                                value="<?php echo htmlspecialchars($settings['receipt_footer'] ?? 'Goods once sold cannot be returned'); ?>">
-                        </div>
-                    </div>
 
-                    <hr>
-                    <h6 class="mb-3">Interface Preferences</h6>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <strong><i class="bi bi-arrow-left-right"></i> Allow Pricing Fallback</strong><br>
-                            <small class="text-muted">If retail price not set, use wholesale price and vice
-                                versa</small>
+                        </diFv>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong><i class="bi bi-eye-slash"></i> Hide High Unit Prices (Retail)</strong><br>
+                                <small class="text-muted">Hide unit prices above threshold on retail
+                                    receipts</small>
+                            </div>
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" name="hide_high_price_retail"
+                                    id="hideHighPriceToggle" role="switch" style="width:2.5em;height:1.3em;"
+                                    onchange="document.getElementById('thresholdRow').style.display = this.checked ? 'block' : 'none'"
+                                    <?= (($settings['hide_high_price_retail'] ?? 'off') === 'on') ? 'checked' : '' ?>>
+                            </div>
                         </div>
-                        <div class="form-check form-switch ms-3">
-                            <input class="form-check-input" type="checkbox" name="pricing_fallback"
-                                id="pricingFallbackToggle" role="switch" style="width:2.5em;height:1.3em;"
-                                <?= (($settings['pricing_fallback'] ?? 'on') === 'on') ? 'checked' : '' ?>>
+
+                        <div id="thresholdRow"
+                            style="display: <?= (($settings['hide_high_price_retail'] ?? 'off') === 'on') ? 'block' : 'none' ?>;">
+                            <div class="col-md-6 mb-3">
+                                <label>Hide Unit Price Threshold (Rs.)</label>
+                                <input type="number" name="hide_high_price_threshold" class="form-control"
+                                    value="<?php echo htmlspecialchars($settings['hide_high_price_threshold'] ?? '1000'); ?>"
+                                    min="0" step="1" placeholder="e.g. 1000">
+                                <small class="text-muted">Prices above this amount will be hidden on retail
+                                    receipts</small>
+                            </div>
                         </div>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <strong><i class="bi bi-mic"></i> Voice Input</strong><br>
-                            <small class="text-muted">Show mic button and voice fields on billing &amp; product
-                                pages</small>
+
+                        <hr>
+                        <h4 class="mb-3">Interface Preferences</h4>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong><i class="bi bi-arrow-left-right"></i> Allow Pricing Fallback</strong><br>
+                                <small class="text-muted">If retail price not set, use wholesale price and vice
+                                    versa</small>
+                            </div>
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" name="pricing_fallback"
+                                    id="pricingFallbackToggle" role="switch" style="width:2.5em;height:1.3em;"
+                                    <?= (($settings['pricing_fallback'] ?? 'on') === 'on') ? 'checked' : '' ?>>
+                            </div>
                         </div>
-                        <div class="form-check form-switch ms-3">
-                            <input class="form-check-input" type="checkbox" name="voice_input" id="voiceToggle"
-                                role="switch" style="width:2.5em;height:1.3em;" <?= (($prefs['voice_input'] ?? 'on') === 'on') ? 'checked' : '' ?>> </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong><i class="bi bi-mic"></i> Voice Input</strong><br>
+                                <small class="text-muted">Show mic button and voice fields on billing &amp; product
+                                    pages</small>
+                            </div>
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" name="voice_input" id="voiceToggle"
+                                    role="switch" style="width:2.5em;height:1.3em;" <?= (($prefs['voice_input'] ?? 'on') === 'on') ? 'checked' : '' ?>>
+                            </div>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -199,7 +228,7 @@ while ($row = $stmt->fetch()) {
                                     <?= isset($settings['calculator_enabled']) && $settings['calculator_enabled'] === 'on' ? 'checked' : '' ?>>
                             </div>
                         </div>
-                        <hr>
+
 
                         <div class="mt-4">
                             <button type="submit" name="save_settings" class="btn btn-primary">

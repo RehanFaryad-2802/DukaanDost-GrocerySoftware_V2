@@ -66,6 +66,10 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+a:hover{
+    color: rgb(166, 0, 243);
+
+}
 
 /* Billing cart */
 .cart-item:hover {

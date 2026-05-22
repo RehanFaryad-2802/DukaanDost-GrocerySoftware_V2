@@ -150,7 +150,9 @@ $categories = $stmt->fetchAll();
                     <tbody>
                         <?php foreach ($categories as $cat): ?>
                             <tr>
-                                <td><strong><?php echo htmlspecialchars($cat['name']); ?></strong></td>
+                                <td><strong><a style="text-decoration: none; color: black;"
+                                            href="products.php?category=<?php echo urlencode($cat['name']); ?>"><?php echo htmlspecialchars($cat['name']); ?></a></strong>
+                                </td>
                                 <td><small><?php echo htmlspecialchars($cat['description'] ?: '-'); ?></small></td>
                                 <td>
                                     <?php if ($cat['product_count'] > 0): ?>

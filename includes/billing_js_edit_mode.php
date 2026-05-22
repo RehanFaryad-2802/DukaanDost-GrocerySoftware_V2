@@ -122,6 +122,15 @@
 
             if (result.success) {
                 window.open(`api/print_receipt.php?id=${result.invoice_id}`, '_blank');
+                
+                // Clear cart and reset protection
+                cart = [];
+                if (typeof resetLeaveProtection === 'function') {
+                    resetLeaveProtection();
+                }
+                if (typeof renderCart === 'function') renderCart();
+                if (typeof updateTotal === 'function') updateTotal();
+                
                 showNotification('success', result.message || 'Invoice updated!');
                 setTimeout(() => { window.location.href = 'dashboard.php'; }, 2000);
             } else {

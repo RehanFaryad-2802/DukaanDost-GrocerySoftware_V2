@@ -1,8 +1,8 @@
 <?php
-require_once '../config/database.php';
+require_once "../config/database.php";
 checkAuth();
 
-$invoice_id = $_GET['id'] ?? 0;
+$invoice_id = $_GET["id"] ?? 0;
 
 $stmt = $pdo->prepare("
     SELECT i.*, u.full_name as created_by_name
@@ -24,73 +24,123 @@ $stmt->execute([$invoice_id]);
 $items = $stmt->fetchAll();
 // Load units with available labels
 $unitsMap = [];
-$uStmt = $pdo->query("SELECT symbol, name, name_urdu, type, name_singular, name_plural, sub_singular, sub_plural, sub_factor FROM units");
+$uStmt = $pdo->query(
+    "SELECT symbol, name, name_urdu, type, name_singular, name_plural, sub_singular, sub_plural, sub_factor FROM units"
+);
 while ($uRow = $uStmt->fetch()) {
-    $unitsMap[$uRow['symbol']] = $uRow;
+    $unitsMap[$uRow["symbol"]] = $uRow;
 }
 
+function frac($whole, $num, $den, $unit = "کلو")
+{
+    $fraction = "<span style='display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:bottom;font-size:0.72em;'>
+            <span style='margin-bottom: 5px;'>{$num}</span>
+            <hr style='width:100%; border: none; border-bottom:1px solid #000; margin:0;'/>
+            <span style='padding:0 2px;'>{$den}</span>
+        </span>";
+    $wholeStr = $whole > 0 ? $whole : "";
+    return "{$fraction}{$wholeStr}{$unit}";
+}
 function formatReceiptUnit($symbol, $qty, $unitsMap)
 {
-    // Special handling for "کلو" unit
-    if ($symbol === 'کلو') {
-        if ($qty == 0.250)
-            return 'پاؤ';
-        if ($qty == 0.050)
-            return 'چھٹانک';
-        if ($qty == 0.125)
-            return 'ادھ پاؤ';
-        if ($qty == 0.750)
-            return 'تین پاؤ';
-        if ($qty == 0.375)
-            return 'ڈھیڑ پاؤ';
-        if ($qty == 1.250)
-            return 'سوا کلو';
+    if ($symbol === "کلو") {
+        if ($qty == 0.25) {
+            return "پاؤ";
+        }
+        if ($qty == 0.05) {
+            return "چھٹانک";
+        }
+        if ($qty == 0.125) {
+            return frac(0, 1, 2, "پاؤ");
+        }
+        if ($qty == 0.5) {
+            return frac(0, 1, 2, "کلو");
+        }
+        if ($qty == 0.75) {
+            return "تین پاؤ";
+        }
+        if ($qty == 1) {
+            return "کلو";
+        }
+        if ($qty == 0.375) {
+            return frac(1, 1, 2, "پاؤ");
+        }
+        if ($qty == 1.25) {
+            return "سوا کلو";
+        }
+        if ($qty >= 1) {
+            $whole = (int) $qty;
+            $decimal = $qty - $whole;
+
+            if ($decimal == 0) {
+                return $whole . " کلو";
+            }
+            if ($decimal == 0.5) {
+                return frac($whole, 1, 2);
+            }
+
+            return $qty . " کلو"; // fallback for anything else
+        }
     }
 
     $u = $unitsMap[$symbol] ?? null;
-    if (!$u)
-        return $qty . ' ' . $symbol;
-
-    if (!empty($u['sub_factor']) && $qty < 1 && $qty > 0) {
-        $converted = $qty * $u['sub_factor'];
-        $formattedQty = (floor($converted) == $converted) ? (int) $converted : rtrim(rtrim(number_format($converted, 3, '.', ''), '0'), '.');
-        $label = ($converted == 1)
-            ? ($u['sub_singular'] ?: $u['sub_plural'] ?: $u['name_urdu'] ?: $u['name'])
-            : ($u['sub_plural'] ?: $u['sub_singular'] ?: $u['name_urdu'] ?: $u['name']);
-        return $formattedQty . ' ' . $label;
+    if (!$u) {
+        return $qty . " " . $symbol;
     }
 
-    $label = !empty($u['name_urdu']) ? $u['name_urdu'] : $u['name'];
-    if ($qty == 1 && !empty($u['name_singular'])) {
-        $label = $u['name_singular'];
-    } elseif ($qty != 1 && !empty($u['name_plural'])) {
-        $label = $u['name_plural'];
+    if (!empty($u["sub_factor"]) && $qty < 1 && $qty > 0) {
+        $converted = $qty * $u["sub_factor"];
+        $formattedQty =
+            floor($converted) == $converted
+            ? (int) $converted
+            : rtrim(rtrim(number_format($converted, 3, ".", ""), "0"), ".");
+        $label =
+            $converted == 1
+            ? ($u["sub_singular"] ?:
+                $u["sub_plural"] ?:
+                $u["name_urdu"] ?:
+                $u["name"])
+            : ($u["sub_plural"] ?:
+                $u["sub_singular"] ?:
+                $u["name_urdu"] ?:
+                $u["name"]);
+        return $formattedQty . " " . $label;
+    }
+
+    $label = !empty($u["name_urdu"]) ? $u["name_urdu"] : $u["name"];
+    if ($qty == 1 && !empty($u["name_singular"])) {
+        $label = $u["name_singular"];
+    } elseif ($qty != 1 && !empty($u["name_plural"])) {
+        $label = $u["name_plural"];
     }
 
     $formattedQty = $qty;
     if (floor($qty) == $qty) {
         $formattedQty = (int) $qty;
     } else {
-        $formattedQty = rtrim(rtrim(number_format($qty, 3, '.', ''), '0'), '.');
+        $formattedQty = rtrim(rtrim(number_format($qty, 3, ".", ""), "0"), ".");
     }
 
-    return $formattedQty . ' ' . $label;
+    return $formattedQty . " " . $label;
 }
 
 function formatReceiptMoney($amount)
 {
     if ($amount == floor($amount)) {
-        return number_format($amount, 0, '.', ',');
+        return number_format($amount, 0, ".", ",");
     }
-    return number_format($amount, 2, '.', ',');
+    return number_format($amount, 2, ".", ",");
 }
 
 $stmt = $pdo->query("SELECT * FROM settings");
 $settings = [];
 while ($row = $stmt->fetch()) {
-    $settings[$row['setting_key']] = $row['setting_value'];
+    $settings[$row["setting_key"]] = $row["setting_value"];
 }
-
+$hide_high_price_retail =
+    ($settings["hide_high_price_retail"] ?? "off") === "on" &&
+    $invoice["customer_type"] === "retail";
+$hide_threshold = floatval($settings["hide_high_price_threshold"] ?? 1000);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -98,7 +148,7 @@ while ($row = $stmt->fetch()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Invoice #<?php echo $invoice['invoice_no']; ?></title>
+    <title>Print Invoice #<?php echo $invoice["invoice_no"]; ?></title>
     <!-- <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400..700&display=swap" rel="stylesheet"> -->
     <style>
         @page {
@@ -264,51 +314,67 @@ while ($row = $stmt->fetch()) {
     </style>
     <script>
         // Auto print when page loads
-        window.onload = function () {
-            window.print();
+        
+        // window.onload = function () {
+        //     window.print();
 
-            // Close window after print dialog closes (or after timeout)
-            setTimeout(function () {
-                window.close();
-            }, 1000);
-        };
+        //     // Close window after print dialog closes (or after timeout)
+        //     setTimeout(function () {
+        //         window.close();
+        //     }, 1000);
+        // };
 
         // If window doesn't close, provide manual close option
-        window.onafterprint = function () {
-            setTimeout(function () {
-                window.close();
-            }, 500);
-        };
+        // window.onafterprint = function () {
+        //     setTimeout(function () {
+        //         window.close();
+        //     }, 500);
+        // };
     </script>
 </head>
 
 <body onload="window.print();">
-    <?php if (!empty($invoice['customer_name'])): ?>
-        <h1 class="text-center" style="font-size: 35px; margin-bottom: 10px;">
-            <?php echo htmlspecialchars($invoice['customer_name']); ?>
-        </h1>
+    <?php if (!empty($invoice["customer_name"])): ?>
+                                                                                                                                                                                    <h1 class="text-center" style="font-size: 35px; margin-bottom: 10px;">
+                                                                                                                                                                                        <?php echo htmlspecialchars(
+                                                                                                                                                                                            $invoice[
+                                                                                                                                                                                                "customer_name"
+                                                                                                                                                                                            ]
+                                                                                                                                                                                        ); ?>
+                                                                                                                                                                                    </h1>
     <?php endif; ?>
-    <?php if (!empty($invoice['customer_phone'])): ?>
-        <div class="text-center">
-            <span><?php echo htmlspecialchars($invoice['customer_phone']); ?></span>
-        </div>
+    <?php if (!empty($invoice["customer_phone"])): ?>
+                                                                                                                                                                                    <div class="text-center">
+                                                                                                                                                                                        <span><?php echo htmlspecialchars(
+                                                                                                                                                                                            $invoice[
+                                                                                                                                                                                                "customer_phone"
+                                                                                                                                                                                            ]
+                                                                                                                                                                                        ); ?></span>
+                                                                                                                                                                                    </div>
     <?php endif; ?>
     <div class="header">
-        <h2><?php echo strtoupper($settings['store_name'] ?? 'GROCERY STORE'); ?></h2>
-        <p><?php echo $settings['store_address'] ?? ''; ?></p>
-        <p><?php echo $settings['store_phone'] ?? ''; ?></p>
-        <?php if (!empty($settings['store_gst'])): ?>
-            <p>GST: <?php echo $settings['store_gst']; ?></p>
+        <h2><?php echo strtoupper(
+            $settings["store_name"] ?? "GROCERY STORE"
+        ); ?></h2>
+        <p><?php echo $settings["store_address"] ?? ""; ?></p>
+        <p><?php echo $settings["store_phone"] ?? ""; ?></p>
+        <?php if (!empty($settings["store_gst"])): ?>
+                                                                                                                                                                                        <p>GST: <?php echo $settings[
+                                                                                                                                                                                            "store_gst"
+                                                                                                                                                                                        ]; ?></p>
         <?php endif; ?>
     </div>
 
     <div class="divider-double"></div>
 
     <div class="info-row">
-        <span>Invoice: <?php echo $invoice['invoice_no']; ?></span>
+        <span>Invoice: <?php echo $invoice["invoice_no"]; ?></span>
     </div>
     <div class="info-row">
-        <span>Date: <?php echo date('d/m/Y - h:i A', strtotime($invoice['created_at'])); ?></span>
+        <span>Date: <?php echo date(
+            "d/m/Y - h:i A",
+            strtotime($invoice["created_at"])
+        ); ?></span>
     </div>
 
     <div class="info-row">
@@ -318,7 +384,7 @@ while ($row = $stmt->fetch()) {
         <span>Total Items:
             <?php
             $regularItems = array_filter($items, function ($item) {
-                return $item['product_name'] !== 'سابقہ';
+                return $item["product_name"] !== "سابقہ";
             });
             echo count($regularItems);
             ?>
@@ -343,78 +409,113 @@ while ($row = $stmt->fetch()) {
             $sabiqaItems = [];
 
             foreach ($items as $item):
+
                 // Separate سابقہ items
-                if ($item['product_name'] === 'سابقہ') {
+                if ($item["product_name"] === "سابقہ") {
                     $sabiqaItems[] = $item;
                     continue;
                 }
 
-                $total_items += $item['quantity'];
+                $total_items += $item["quantity"];
 
-                $displayUnit = $item['display_unit'] ?? null;
-                $displayQty = $item['display_quantity'] ?? null;
+                $displayUnit = $item["display_unit"] ?? null;
+                $displayQty = $item["display_quantity"] ?? null;
 
                 if (!$displayUnit) {
-                    $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
-                    $stmt->execute([$item['product_id']]);
+                    $stmt = $pdo->prepare(
+                        "SELECT unit FROM products WHERE id = ?"
+                    );
+                    $stmt->execute([$item["product_id"]]);
                     $product = $stmt->fetch();
-                    $displayUnit = $product ? $product['unit'] : 'piece';
+                    $displayUnit = $product ? $product["unit"] : "piece";
                 }
 
-                $qty = (float) ($displayQty ?? $item['quantity']);
+                $qty = (float) ($displayQty ?? $item["quantity"]);
                 ?>
-                <tr>
-                    <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
-                    <td class="text-center"><?php echo number_format($item['unit_price'], 0); ?></td>
-                    <td class="" dir="rtl">
-                        <?php echo formatReceiptUnit($displayUnit, $qty, $unitsMap); ?>
-                    </td>
-                    <td dir="rtl" class="item-name item-col">
-                        #<?php echo $item_number++ . ' '; ?>     <?php echo htmlspecialchars($item['product_name']); ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
+                                 <tr>
+                                     <td class="text-center"><?php echo number_format(
+                                         $item["total_price"],
+                                         0
+                                     ); ?></td>
+                                     <td class="text-center">
+                                         <?php echo $hide_high_price_retail &&
+                                             $item["unit_price"] > $hide_threshold
+                                             ? "-"
+                                             : number_format($item["unit_price"], 0); ?>
+                                     </td>
+                                     <td class="" dir="rtl">
+                                         <?php echo formatReceiptUnit(
+                                             $displayUnit,
+                                             $qty,
+                                             $unitsMap
+                                         ); ?>
+                                     </td>
+                                     <td dir="rtl" class="item-name item-col">
+                                         #<?php echo $item_number++ .
+                                             " "; ?>                          <?php echo htmlspecialchars(
+                                                                        $item["product_name"]
+                                                                    ); ?>
+                                     </td>
+                                 </tr>
+                        <?php
+            endforeach;
+            ?>
 
             <?php foreach ($sabiqaItems as $item):
-                $displayUnit = $item['display_unit'] ?? null;
-                $displayQty = $item['display_quantity'] ?? null;
+
+                $displayUnit = $item["display_unit"] ?? null;
+                $displayQty = $item["display_quantity"] ?? null;
 
                 if (!$displayUnit) {
-                    $stmt = $pdo->prepare("SELECT unit FROM products WHERE id = ?");
-                    $stmt->execute([$item['product_id']]);
+                    $stmt = $pdo->prepare(
+                        "SELECT unit FROM products WHERE id = ?"
+                    );
+                    $stmt->execute([$item["product_id"]]);
                     $product = $stmt->fetch();
-                    $displayUnit = $product ? $product['unit'] : 'piece';
+                    $displayUnit = $product ? $product["unit"] : "piece";
                 }
 
-                $qty = (float) ($displayQty ?? $item['quantity']);
+                $qty = (float) ($displayQty ?? $item["quantity"]);
                 ?>
-                <tr>
-                    <td class="text-center"><?php echo number_format($item['total_price'], 0); ?></td>
-                    <td class="text-center"></td>
-                    <td class="" dir="rtl"></td>
-                    <td dir="rtl" class="item-name item-col">
-                        ##<?php echo htmlspecialchars($item['product_name']); ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
+                               <tr>
+                                   <td class="text-center"><?php echo number_format(
+                                       $item["total_price"],
+                                       0
+                                   ); ?></td>
+                                   <td class="text-center"></td>
+                                   <td class="" dir="rtl"></td>
+                                   <td dir="rtl" class="item-name item-col">
+                                       ##<?php echo htmlspecialchars(
+                                           $item["product_name"]
+                                       ); ?>
+                                   </td>
+                               </tr>
+                        <?php
+            endforeach; ?>
         </tbody>
 
     </table>
 
     <div class="divider"></div>
-    <?php if ($invoice['discount_amount'] > 0): ?>
-        <div class="info-row">
-            <span>Discount:</span>
-            <span>
-                <?php echo $settings['currency_symbol']; ?>     <?php echo number_format($invoice['discount_amount'], 2); ?>
-            </span>
-        </div>
+    <?php if ($invoice["discount_amount"] > 0): ?>
+                         <div class="info-row">
+                             <span>Discount:</span>
+                             <span>
+                                 <?php
+                                 echo $settings["currency_symbol"];
+                                 echo number_format($invoice["discount_amount"], 2);
+                                 ?>
+                             </span>
+                              </div>
     <?php endif; ?>
 
 
     <div class="info-row total-row">
         <span>
-            <?php echo $settings['currency_symbol']; ?><?php echo number_format($invoice['total_amount'], 0); ?>
+            <?php
+            echo $settings["currency_symbol"];
+            echo number_format($invoice["total_amount"], 0);
+            ?>
         </span>
         <span dir="rtl">ٹوٹل:</span>
     </div>
@@ -422,8 +523,12 @@ while ($row = $stmt->fetch()) {
     <div class="divider"></div>
 
     <div class="footer">
-        <p>Printing Time: <?php echo date('d/m/Y - h:i A', strtotime('-30 minutes')); ?></p>
-        <p><?php echo $settings['receipt_header'] ?? 'Thank you for shopping :)'; ?></p>
+        <p>Printing Time: <?php echo date(
+            "d/m/Y - h:i A",
+            strtotime("-30 minutes")
+        ); ?></p>
+        <p><?php echo $settings["receipt_header"] ??
+            "Thank you for shopping :)"; ?></p>
     </div>
 
     <div class="text-center" style="margin-top: 5px;">

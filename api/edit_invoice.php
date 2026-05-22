@@ -29,20 +29,20 @@ if ($action === 'get_invoice') {
     echo json_encode([
         'success' => true,
         'invoice' => [
-            'id'             => $invoice['id'],
-            'invoice_no'     => $invoice['invoice_no'],
-            'customer_name'  => $invoice['customer_name'],
+            'id' => $invoice['id'],
+            'invoice_no' => $invoice['invoice_no'],
+            'customer_name' => $invoice['customer_name'],
             'customer_phone' => $invoice['customer_phone'],
-            'customer_type'  => $invoice['customer_type'],
-            'subtotal'       => $invoice['subtotal'],
-            'discount_amount'=> $invoice['discount_amount'],
-            'total_amount'   => $invoice['total_amount'],
+            'customer_type' => $invoice['customer_type'],
+            'subtotal' => $invoice['subtotal'],
+            'discount_amount' => $invoice['discount_amount'],
+            'total_amount' => $invoice['total_amount'],
             'payment_method' => $invoice['payment_method'],
-            'items'          => $items
+            'items' => $items
         ]
     ]);
 
-// ── UPDATE INVOICE (true in-place edit) ──────────────────────────────────────
+    // ── UPDATE INVOICE (true in-place edit) ──────────────────────────────────────
 } elseif ($action === 'update_invoice') {
     $old_invoice_id = intval($data['old_invoice_id'] ?? 0);
 
@@ -84,7 +84,7 @@ if ($action === 'get_invoice') {
             WHERE id = ?
         ");
         $stmt->execute([
-            $data['customer_name']  ?? null,
+            $data['customer_name'] ?? null,
             $data['customer_phone'] ?? null,
             $data['customer_type'],
             $data['subtotal'],
@@ -96,7 +96,7 @@ if ($action === 'get_invoice') {
         // 4. Insert new items and deduct stock
         foreach ($data['items'] as $item) {
             $product_id = intval($item['product_id'] ?? 0) ?: null;
-            $quantity   = floatval($item['quantity']   ?? 0);
+            $quantity = floatval($item['quantity'] ?? 0);
 
             $stmt = $pdo->prepare("
                 INSERT INTO invoice_items 
@@ -127,18 +127,17 @@ if ($action === 'get_invoice') {
         $inv_no = $stmt->fetchColumn();
 
         echo json_encode([
-            'success'    => true,
+            'success' => true,
             'invoice_no' => $inv_no,
             'invoice_id' => $old_invoice_id,
-            'message'    => 'Invoice ' . $inv_no . ' updated successfully!'
+            'message' => 'Invoice ' . $inv_no . ' updated successfully!'
         ]);
-
     } catch (Exception $e) {
         $pdo->rollBack();
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
 
-// ── LIST EDITABLE INVOICES ───────────────────────────────────────────────────
+    // ── LIST EDITABLE INVOICES ───────────────────────────────────────────────────
 } elseif ($action === 'list_editable') {
     $stmt = $pdo->query("
         SELECT 
@@ -149,7 +148,7 @@ if ($action === 'get_invoice') {
         JOIN users u ON i.created_by = u.id
         WHERE i.payment_status = 'paid'
         ORDER BY i.created_at DESC
-        LIMIT 50
+        LIMIT 999999999999
     ");
     echo json_encode(['success' => true, 'invoices' => $stmt->fetchAll()]);
 }
